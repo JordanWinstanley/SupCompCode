@@ -44,6 +44,6 @@ rundir=${PWD}
 cd "$rundir" || exit -1
 echo "Run Directory  = $(pwd)"
 export OMP_NUM_THREADS=$cpuspertask
-module load python numpy pandas hdf5 
+module load gcc/12.2.0 openmpi/4.1.4 numpy/1.24.2-scipy-bundle-2023.02 mpi4py/3.1.4 h5py/3.8.0 matplotlib/3.7.0
 
 srun python main.py
