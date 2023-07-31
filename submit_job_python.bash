@@ -2,7 +2,7 @@
 
                                                          # Set the working directory of the batch 
                                                          # script before it is executed.
-#SBATCH --job-name=m1e12b0Job                               # Job name
+#SBATCH --job-name=Plots - m1e12b0Job                               # Job name
 #SBATCH --mail-type=ALL                                  # Valid event values are: BEGIN, END, FAIL, REQUEUE, 
                                                          # ALL (equivalent to BEGIN, END, FAIL, REQUEUE, and STAGE_OUT), 
                                                          # STAGE_OUT (burst buffer stage out completed), 
@@ -10,7 +10,7 @@
                                                          # TIME_LIMIT_80 (reached 80 percent of time limit), 
                                                          # and TIME_LIMIT_50 (reached 50 percent of time limit). 
 #SBATCH --mail-user=22226851@student.uwa.edu.au          # Where to send mail.  Set this to your email address
-#SBATCH --ntasks-per-node=32                             # Number of processes/threads per node
+#SBATCH --ntasks-per-node=16                             # Number of processes/threads per node
 #SBATCH --nodes=1                                        # Maximum number of nodes to be allocated
 #SBATCH --mem-per-cpu=4GB                                # Memory (i.e. RAM) per CPU
 #SBATCH --time=2-00:00:00                                # Wall time limit (days-hrs:min:sec)

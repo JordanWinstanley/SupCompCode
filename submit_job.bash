@@ -10,7 +10,7 @@
                                                          # TIME_LIMIT_80 (reached 80 percent of time limit), 
                                                          # and TIME_LIMIT_50 (reached 50 percent of time limit). 
 #SBATCH --mail-user=22226851@student.uwa.edu.au          # Where to send mail.  Set this to your email address
-#SBATCH --ntasks-per-node=32                             # Number of processes/threads per node
+#SBATCH --ntasks-per-node=48                             # Number of processes/threads per node
 #SBATCH --nodes=1                                        # Maximum number of nodes to be allocated
 #SBATCH --mem-per-cpu=4GB                                # Memory (i.e. RAM) per CPU
 #SBATCH --time=2-00:00:00                                # Wall time limit (days-hrs:min:sec)
@@ -46,4 +46,4 @@ echo "Run Directory  = $(pwd)"
 export OMP_NUM_THREADS=$cpuspertask
 module load gcc/12.2.0 openmpi/4.1.4 fftw/3.3.10 hdf5/1.14.0 gsl/2.7 
 
-srun ../../Gadget4 ./param.txt
+srun ../../../../../../Gadget4 ./param.txt
