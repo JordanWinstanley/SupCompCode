@@ -97,5 +97,5 @@ InitGasTemp            0
 
 ActivePartFracForPMinsteadOfEwald 0.1
 
-%C_StaticNFWHQHalo 10
-%Mass_StaticNFWHQHalo 1e2
+%A_StaticHQHalo 60.45
+%Mass_StaticHQHalo 1e3
