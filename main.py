@@ -229,6 +229,7 @@ def datainitializing(filename):
             "mpp": masses
         }
         df = pd.DataFrame(data, index = pids)
+        time = f['Header'].attrs['Time']
     return df
 
 
@@ -248,9 +249,9 @@ def findmiddleparts(snapshotlst):
         }
         df = pd.DataFrame(data, index=pids)
     i = 10
-    df['posx'] = df['posx'] - xoffset
-    df['posy'] = df['posy'] - yoffset
-    df['posz'] = df['posz'] - zoffset
+    df['posx'] = df['posx'] - df['posx'].mean()
+    df['posy'] = df['posy'] - df['posx'].mean()
+    df['posz'] = df['posz'] - df['posz'].mean()
     df['r'] = np.sqrt(df['posx']**2 + df['posy']**2 + df['posz']**2)
     temp = df.copy()    
     temp = temp.sort_values(by=['r']).head(i)
