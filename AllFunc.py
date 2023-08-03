@@ -56,7 +56,7 @@ def findplotdirec():
 def directorycheck(fp): 
 	dict = {
 	"plots": ["bound","COM","Density","mass","phase","pos","maxr","sigmar",'sigmatot',"phaseCOM","circleplot","inrhalf","densitywithhalo",\
-	"masswithhalo","avgvel","avgvelsquared", "mdnmean", "RmassEnc","inr200","npartfromcent"],
+	"masswithhalo","avgvel","avgvelsquared", "mdnmean", "RmassEnc","inr200","npartfromcent","velhist"],
 
 	"quickpos":["eps","pos","half","with dot","extra", "half/png","half/eps","with dot/png", \
 	"with dot/eps", "extra/png","extra/eps","partpath", "partpathwhole", "hist","half with dot","half with dot/eps","half with dot/png",\
@@ -352,6 +352,21 @@ def phaseCOM(df,filename,fp,i,k):
     plt.savefig(fp+"plots/phaseCOM/"+"phase_"+filename,dpi=600)
     plt.close()
 
+def velhist(df,filename,fp,i,k):
+    xcounts, xbins = np.histogram(df['velx'],bins=100)
+    ycounts, ybins = np.histogram(df['vely'],bins=100)
+    zcounts, zbins = np.histogram(df['velz'],bins=100)
+    fig, axs = plt.subplots(3)
+    axs[0].hist(xbins[:-1],xbins, weights=xcounts,color='black')
+    axs[1].hist(ybins[:-1],ybins, weights=ycounts,color='black')
+    axs[2].hist(zbins[:-1],zbins, weights=zcounts,color='black')
+    axs[0].set_xlabel(r"$V_{x}$")
+    axs[1].set_xlabel(r"$V_{y}$")
+    axs[2].set_xlabel(r"$V_{z}$")
+    fig.supylabel("Counts")
+    fig.suptitle(f"t = {round(k,1)} Gyr, Snap: {i}")
+    fig.tight_layout()
+    plt.savefig(fp+"plots/velhist/"+"velhist_"+filename,dpi=600)
 
 def density(df2,filename,fp,i,k):
     plt.loglog()
@@ -431,6 +446,7 @@ def COMplot(COMlist,fp,timinglist):
     ax2.set_ylabel("Z")
     ax3.set_xlabel("Y")
     ax3.set_ylabel("Z")
+    fig.tight_layout()
     #fig.colorbar()
     plt.xlabel("x")
     plt.savefig(fp+"plots/COM/COM.png",dpi=600)

@@ -67,6 +67,7 @@ def main():
         if i % 32 == 0:
             #af.poscircleplot(df,i,fp,CircComdf,condict,fn,time)
             af.position(df,fn,fp,i,time)
+            af.velhist(df,fn,fp,i,time)
             af.phase(df,fn,fp,i,time)
             af.phaseCOM(df,fn,fp,i,time)
             af.density(df2,fn,fp,i,time)
