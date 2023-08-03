@@ -4,15 +4,111 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
-import sys
-sys.path.insert(0,os.getcwd())
-import parameters as par
-massunit = 1e10
-kpctom = 3.086e+19 
-smtokg = 1.9889e+30
-G = 6.67430 * (10 ** (-11)); 
-rhocrit = 2.7755e11
-    
+
+def main():
+    constants()
+    global COMM
+    COMM = MPI.COMM_WORLD
+    if COMM.rank == 0:
+        snapshotlst = getsnapshots()
+        plotfilepath,pltfiles = findplotdirec()
+        plotfp = prepareplotfile(plotfilepath, pltfiles)
+        indexdf = findmiddleparts(snapshotlst)
+        k = len(snapshotlst)
+        snapshotlst = np.array(list(enumerate(snapshotlst)))
+        snapsplt = np.array_split(snapshotlst,COMM.size)
+    else:
+        snapshotlst = None
+        snapsplt = None 
+        indexdf = None
+        k = None
+        plotfp = None
+
+    k = COMM.bcast(k, root=0)
+    indexdf = COMM.bcast(indexdf, root=0)
+    splt = COMM.scatter(snapsplt)
+    fp = COMM.bcast(plotfp,root=0)
+    COMM.Barrier()
+
+    Comlist = np.array([]).reshape(0,3)
+    inr200 = []; timinglist = np.empty(shape=(0,0))
+    for i, fname in splt:
+        df, time = datainitializing(fname)
+        timinglist = np.append(timinglist, time)
+        avgposdf, avgveldf = COMfind(df, indexdf)
+        CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
+        r = radiusprep()
+        df2 = calcs(df, r, CircComdf, CircVeldf)
+
+        Comlist = np.concatenate((Comlist, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
+        #Prep work
+        boundlst = []; mdnlist = []; avglst = []
+        x = [0,32,64,96,128,160,192,224,256]
+        y = [0.05,0.10,0.25,0.5,0.75]
+        condict2 = dict(); mdndict = dict()
+        condict = {
+        "50": [],
+        "100": [],
+        "200": [],
+        "400": [],
+        "800": [],
+        "1600": [],
+        "3200": [],
+        "6400": []}
+        i = int(i)
+        for num in y:
+            key = int(round(num*N))
+            condict2[str(key)] = []
+            mdndict[str(key)] = [[],[]]
+
+        fn = str(i)
+        if len(fn) == 1:
+            fn = "00" + fn
+        if len(fn) == 2:
+            fn = "0" + fn
+
+        if i % 32 == 0:
+            poscircleplot(df,i,fp,CircComdf,condict,fn,k)
+            position(df,fn,fp,i,k)
+            phase(df,fn,fp,i,k)
+            phaseCOM(df,fn,fp,i,k)
+            density(df2,fn,fp,i,k)
+            mass(df2,fn,fp,i,k)
+            avgvelplot(df2,fn,fp,i,k)
+            avgvelplot2(df2,fn,fp,i,k)
+            densitywithhalo(df2,fn,fp,i,k)
+            masswithhalo(df2,fn,fp,i,k)
+            sigmavrplot(df2,fn,fp,i,k)
+            sigmatotplot(df2,fn,fp,i,k)
+            NpartCOM(df,fn,fp,i,k)
+
+        inr200 = inr200func(df,CircComdf,inr200,fp)
+        condict = maxraddict(df,condict,CircComdf)
+        condict2 = maxraddict(df,condict2,CircComdf)
+        mdndict = medavgcalc(df,mdndict,fp)
+
+        del df
+        del df2
+
+    inr200 = COMM.gather(np.array(inr200), root=0)
+    #condict = COMM.gather(condict, root=0)
+    #condict2 = COMM.gather(condict2, root=0)
+    #mdndict = COMM.gather(mdndict, root=0)
+    Comlist = COMM.gather(Comlist, root=0)
+    timinglist = COMM.gather(timinglist, root=0)
+    if COMM.rank == 0:
+        inr200 = np.concatenate(inr200)
+        Comlist = np.concatenate(Comlist)
+        timinglist = np.concatenate(timinglist)
+        inr200plot(inr200, fp, timinglist)
+        COMplot(Comlist, fp, timinglist)
+        COMradplot(Comlist, fp, timinglist)
+        COMtestplot(Comlist, fp, timinglist)
+
+    print(f"Rank {COMM.rank} Finished")
+    COMM.Barrier()
+    MPI.Finalize()
+
 
 def prepareplotfile(plotfilepath, pltfiles):
     x = pltfiles.split("/")
@@ -93,6 +189,31 @@ def directorycheck(fp):
 			
 
 #Main Bulk of Functions for central location Calculation
+def constants():
+    global G; global M; global rs; global massunit; global N; global mpp
+    global kpctom; global smtokg; global c; global rhalf; global vu; global Rmax;
+    global halodens; global r200; global soft; global tapper; global V200; global M200;
+    global xoffset; global yoffset; global zoffset; global halotype; global rhocrit;
+    global h; global halodens2
+    import parameters as par
+    G = 6.67430 * (10 ** (-11)); 
+    rhocrit = 2.7755e11 #Solar masses per pc-3 
+    M200 = par.M200
+    c = par.c
+    r200 = (3/4/np.pi/200/rhocrit*M200)**(1/3)*1000
+    rs = r200 / c * np.sqrt(2*(np.log(1+c)-c/(1+c)))    #Scale Radius
+    massunit = 1e10
+    N = par.N; #Assuming total number of particles in system
+    kpctom = 3.086e+19 
+    smtokg = 1.9889e+30
+    xoffset = r200*par.startloc
+    yoffset = 0
+    zoffset = 0
+    vxoffset = 0
+    vyoffset = 0
+    vzoffset = 0
+    soft = par.soft
+    halodens = M200 / 2 / np.pi / rs**3
 
 
 def datainitializing(filename): 
@@ -131,8 +252,6 @@ def findmiddleparts(snapshotlst):
             "velz": vel[:, 2]
         }
         df = pd.DataFrame(data, index=pids)
-    if len(df['posx'] > 10_000_000):
-         df = df[df.index > 10_000_000]
     i = 10
     df['posx'] = df['posx'] - df['posx'].mean()
     df['posy'] = df['posy'] - df['posx'].mean()
@@ -191,10 +310,7 @@ def calcs(df, r, COM, VEL):
     avgvelx2 = np.empty(shape=(0,0)); avgvely2 = np.empty(shape=(0,0)); avgvelz2 = np.empty(shape=(0,0))
     sigmax = np.empty(shape=(0,0)); sigmay = np.empty(shape=(0,0)); sigmaz = np.empty(shape=(0,0))
     sigmavr = np.empty(shape=(0,0))
-    r200 = (3/4/np.pi/200/rhocrit*par.M200)**(1/3)*1000
-    rs = r200 / par.c * np.sqrt(2*(np.log(1+par.c)-par.c/(1+par.c)))
-    halodens = par.M200 / 2 / np.pi / rs**3
-
+    
     df['posxCOM'] = df['posx']-COM['posx'].iloc[0] 
     df['posyCOM'] = df['posy']-COM['posy'].iloc[0]  
     df['poszCOM'] = df['posz']-COM['posz'].iloc[0]  
@@ -289,7 +405,6 @@ def calcs(df, r, COM, VEL):
 
 def inr200func(df,COM,inrhalf,fp):
     temp = df.copy(); tot = len(df['posx'])
-    r200 = (3/4/np.pi/200/rhocrit*par.M200)**(1/3)*1000
     inrhalf.append(len(temp[temp['radiusCOM']<=r200]))
     return inrhalf
 
@@ -326,7 +441,7 @@ def position(df,filename,fp,i,k):
     plt.ylim(-lims, lims)
     plt.xlabel('x')
     plt.ylabel('y')
-    plt.title(f"t = {round(k,1)} Gyr, snap: {i}")
+    plt.title(f"t = {round(i*15/k,2)} Gyr, snap: {i}")
     plt.savefig(fp+"plots/pos/"+"position_"+filename,dpi=600)
     plt.close()
 
@@ -337,7 +452,7 @@ def phase(df,filename,fp,i,k):
     plt.ylabel("vr")
     #plt.xlim(0, 500)
     #plt.ylim(-600,600)
-    plt.title(f"t = {round(k,1)} Gyr, snap: {i}")
+    plt.title(f"t = {round(i*15/k,2)} Gyr, snap: {i}")
     plt.savefig(fp+"plots/phase/"+"phase_"+filename,dpi=600)
     plt.close()
 
@@ -348,7 +463,7 @@ def phaseCOM(df,filename,fp,i,k):
     plt.ylabel("vr")
     #plt.xlim(0, 500)
     #plt.ylim(-600,600)
-    plt.title(f"t = {round(k,1)} Gyr, Snap: {i}")
+    plt.title(f"t = {round(i*15/k,2)} Gyr, Snap: {i}")
     plt.savefig(fp+"plots/phaseCOM/"+"phase_"+filename,dpi=600)
     plt.close()
 
@@ -362,7 +477,7 @@ def density(df2,filename,fp,i,k):
     plt.xlim(1E-1, 2000)
     plt.ylabel("Density")
     plt.xlabel("Radius")
-    plt.title(f"t = {round(k,1)} Gyr, snap: {i}")
+    plt.title(f"t = {round(i*15/k,2)} Gyr, snap: {i}")
     plt.savefig(fp+"plots/density/"+ "density_"+filename,dpi=600)
     plt.close()
 
@@ -375,7 +490,7 @@ def mass(df2,filename,fp,i,k):
     plt.xlabel("Radius")
     plt.ylim(1E0, 1E12)
     plt.xlim(1E-1, 2000)
-    plt.title(f"t = {round(k,1)} Gyr, snap: {i}")
+    plt.title(f"t = {round(i*15/k,2)} Gyr, snap: {i}")
     plt.savefig(fp+"plots/mass/"+ "mass_"+filename,dpi=600)
     plt.close()
 
@@ -393,7 +508,7 @@ def densitywithhalo(df2,filename,fp,i,k):
     plt.ylabel("Density")
     plt.xlabel("Radius")
     plt.legend(loc='best')
-    plt.title(f"t = {round(k,1)} Gyr, snap: {i}")
+    plt.title(f"t = {round(i*15/k,2)} Gyr, snap: {i}")
     plt.savefig(fp+"plots/densitywithhalo/"+ "densitywithhalo_"+filename,dpi=600)
     plt.close()
 
@@ -412,7 +527,7 @@ def masswithhalo(df2,filename,fp,i,k):
     plt.ylabel("Enclosed Mass")
     plt.xlabel("Radius")
     plt.legend(loc='best')
-    plt.title(f"t = {round(k,1)} Gyr, snap: {i}")
+    plt.title(f"t = {round(i*15/k,2)} Gyr, snap: {i}")
     plt.savefig(fp+"plots/masswithhalo/"+ "masswithhalo_"+filename,dpi=600)
     plt.close()
 
@@ -548,7 +663,7 @@ def poscircleplot(df,i,fp,COM,condict,fn,k):
         circ = plt.Circle((COM['posx'].iloc[0],COM['posy'].iloc[0]),r,fill=False, color = b,label=a,clip_on=False,lw=0.2)
         ax1.add_patch(circ)
     plt.legend(loc='upper left')
-    plt.title("t = " + str(round(k,1)) + " Gyr")
+    plt.title("t = " + str(round(i*15/k,2)) + " Gyr")
     plt.xlabel('x')
     plt.ylabel('y')
     plt.savefig(fp+"plots/circleplot/circleplotcut_" + fn + ".png",dpi=600)
@@ -574,7 +689,7 @@ def avgvelplot(df2, filename,fp,i,k):
     plt.scatter(df2['meanradius'],df2['avgvel'],s=5,c='black')
     plt.ylabel("Avg vel")
     plt.xlabel("Radius")
-    plt.title(f"t = {round(k,1)} Gyr, snap: {i}")
+    plt.title(f"t = {round(i*15/k,2)} Gyr, snap: {i}")
     plt.savefig(fp+"plots/avgvel/"+ "avgvel_"+filename,dpi=600)
     plt.close()
 
@@ -584,7 +699,7 @@ def avgvelplot2(df2, filename,fp,i,k):
     plt.scatter(df2['meanradius'],df2['avgvel2'],s=5,c='black')
     plt.ylabel("Avg vel ** 2")
     plt.xlabel("Radius")
-    plt.title(f"t = {round(k,1)} Gyr, snap: {i}")
+    plt.title(f"t = {round(i*15/k,2)} Gyr, snap: {i}")
     plt.savefig(fp+"plots/avgvelsquared/"+ "avgvelsquared_"+filename,dpi=600)
     plt.close()
 
@@ -623,7 +738,7 @@ def sigmavrplot(df2, filename,fp,i,k):
     plt.xlabel('R')
     plt.ylabel(r"$\sigma_{r}$")
     plt.xlim(0,500)
-    plt.title(f"t = {round(k,1)} Gyr, snap: {i}")
+    plt.title(f"t = {round(i*15/k,2)} Gyr, snap: {i}")
     plt.savefig(fp+"plots/sigmar/"+ "sigmar_"+filename,dpi=600)
     plt.close()
 
@@ -633,7 +748,7 @@ def sigmatotplot(df2, filename,fp,i,k):
     plt.xlabel('R')
     plt.ylabel(r"$\sigma_{tot}/\sigma_{r}^{2}$")
     plt.xlim(0,500)
-    plt.title(f"t = {round(k,1)} Gyr, snap: {i}")
+    plt.title(f"t = {round(i*15/k,2)} Gyr, snap: {i}")
     plt.savefig(fp+"plots/sigmatot/sigmatotr_"+filename,dpi=600)
     plt.close()
 
@@ -658,6 +773,11 @@ def NpartCOM(df,filename,fp,i,k):
     plt.plot(meanrad,npart)
     plt.xlabel('radius from (0,0,0)')
     plt.ylabel("Number of Particles")
-    plt.title(f"t = {round(k,1)} Gyr, snap: {i}")
+    plt.title(f"t = {round(i*15/k,2)} Gyr, snap: {i}")
     plt.savefig(fp+"plots/npartfromcent/npartsfc_"+filename,dpi=600)
     plt.close()
+
+
+
+if __name__ == "__main__":
+    main()
