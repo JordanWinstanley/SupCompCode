@@ -12,6 +12,9 @@ kpctom = 3.086e+19
 smtokg = 1.9889e+30
 G = 6.67430 * (10 ** (-11)); 
 rhocrit = 2.7755e11
+r200 = (3/4/np.pi/200/rhocrit*par.M200)**(1/3)*1000
+rs = r200 / par.c * np.sqrt(2*(np.log(1+par.c)-par.c/(1+par.c)))
+halodens = par.M200 / 2 / np.pi / rs**3
     
 
 def prepareplotfile(plotfilepath, pltfiles):
@@ -179,7 +182,7 @@ def shrinkingcircmethod(df, COM):
 
 #Functions for Bulk Calcs
 def radiusprep(x=-1,y=3,z=0.1):
-    r = 10 ** np.arange(x,y+z,z)
+    r = 10 ** np.arange(x,np.log10(r200),z)
     r = np.insert(r, 0, 0)
     return r
 
@@ -191,9 +194,7 @@ def calcs(df, r, COM, VEL):
     avgvelx2 = np.empty(shape=(0,0)); avgvely2 = np.empty(shape=(0,0)); avgvelz2 = np.empty(shape=(0,0))
     sigmax = np.empty(shape=(0,0)); sigmay = np.empty(shape=(0,0)); sigmaz = np.empty(shape=(0,0))
     sigmavr = np.empty(shape=(0,0))
-    r200 = (3/4/np.pi/200/rhocrit*par.M200)**(1/3)*1000
-    rs = r200 / par.c * np.sqrt(2*(np.log(1+par.c)-par.c/(1+par.c)))
-    halodens = par.M200 / 2 / np.pi / rs**3
+
 
     df['posxCOM'] = df['posx']-COM['posx'].iloc[0] 
     df['posyCOM'] = df['posy']-COM['posy'].iloc[0]  
@@ -397,16 +398,10 @@ def mass(df2,filename,fp,i,k):
 
 def densitywithhalo(df2,filename,fp,i,k):
     plt.loglog()
-    plt.plot(df2["meanradius"], df2['dens'], color='black', label = 'N-Body')
-    plt.plot(df2["meanradius"], df2['halodens'], color='red',label='rs')
-    #plt.plot(df2["meanradius"], df2['halodens2.0'], color='green',label='updated rs')
-    #plt.plot(df2["meanradius"], df2['halodens2'], color='green')
-    #plt.plot(df2["meanradius"], df2['halodens3'], color='purple')
-    #plt.plot(df2["meanradius"], df2['halodensNFW'], color='orange')
-    plt.ylim(1E0, 1E10)
-    plt.xlim(1E0, 2000)
-    plt.ylabel("Density")
-    plt.xlabel("Radius")
+    plt.plot(df2["meanradius"]/r200, df2['dens']/rhocrit, color='black', label = 'N-Body')
+    plt.plot(df2["meanradius"]/r200, df2['halodens']/rhocrit, color='red',label='Analytical')
+    plt.ylabel(r"$\rho / \rho_{c}$")
+    plt.xlabel(r"$R/R_{200}$")
     plt.legend(loc='best')
     plt.title(f"t = {round(k,1)} Gyr, snap: {i}")
     plt.savefig(fp+"plots/densitywithhalo/"+ "densitywithhalo_"+filename,dpi=600)
@@ -416,14 +411,7 @@ def densitywithhalo(df2,filename,fp,i,k):
 def masswithhalo(df2,filename,fp,i,k):
     plt.loglog()
     plt.plot(df2['meanradius'], df2['summass'], color='black', label='N-body')
-    plt.plot(df2['meanradius'], df2['haloMass'], color='red', label='rs')
-    #plt.plot(df2['meanradius'], df2['haloMass2'], color='green',label='Updated rs')
-    #rhocrit = 2.7755e11
-    #r200 = (3/4/np.pi/200/rhocrit*1e12)**(1/3)*1000
-    #print((df2['summass']/df2['haloMass']).mean())
-    #plt.plot(df2['meanradius'],df2['summass']/df2['haloMass'])
-    #plt.hlines(1e12, xmin = df2['meanradius'].min(),xmax=df2['meanradius'].max(),color='purple',linestyles='dashed')
-    #plt.vlines(r200,ymin=0,ymax=1e12,color='purple',linestyles='dashed')
+    plt.plot(df2['meanradius'], df2['haloMass'], color='red', label='Analytical')
     plt.ylabel("Enclosed Mass")
     plt.xlabel("Radius")
     plt.legend(loc='best')
@@ -433,7 +421,6 @@ def masswithhalo(df2,filename,fp,i,k):
 
 
 def COMplot(COMlist,fp,timinglist):
-
     fig = plt.figure()
     gs = fig.add_gridspec(2,2)
     (ax1, ax2), (ax3, ax4) = gs.subplots()
@@ -648,7 +635,8 @@ def sigmatotplot(df2, filename,fp,i,k):
     plt.plot(df2['meanradius'],1-(df2['sigmatot'])/2/df2['sigmavr'] + 0.5)
     plt.xlabel('R')
     plt.ylabel(r"$\sigma_{tot}/\sigma_{r}^{2}$")
-    plt.xlim(0,500)
+    #plt.xlim(0,500)
+    plt.ylim(-0.5,0.5)
     plt.title(f"t = {round(k,1)} Gyr, snap: {i}")
     plt.savefig(fp+"plots/sigmatot/sigmatotr_"+filename,dpi=600)
     plt.close()
