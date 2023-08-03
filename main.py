@@ -48,6 +48,8 @@ def main():
     inr200 = []; timinglist = np.empty(shape=(0,0))
     for i, fname in splt:
         df, time = af.datainitializing(fname)
+        if len(df['posx']) > 10_000_000:
+            df = df[df.index > 10_000_000]
         timinglist = np.append(timinglist, time)
         avgposdf, avgveldf = af.COMfind(df, indexdf)
         CircComdf, CircVeldf = af.shrinkingcircmethod(df, avgposdf)
@@ -55,25 +57,6 @@ def main():
         df2 = af.calcs(df, r, CircComdf, CircVeldf)
 
         Comlist = np.concatenate((Comlist, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
-        #Prep work
-        boundlst = []; mdnlist = []; avglst = []
-        x = [0,32,64,96,128,160,192,224,256]
-        y = [0.05,0.10,0.25,0.5,0.75]
-        condict2 = dict(); mdndict = dict()
-        condict = {
-        "50": [],
-        "100": [],
-        "200": [],
-        "400": [],
-        "800": [],
-        "1600": [],
-        "3200": [],
-        "6400": []}
-        i = int(i)
-        """for num in y:
-            key = int(round(num*N))
-            condict2[str(key)] = []
-            mdndict[str(key)] = [[],[]]"""
 
         fn = str(i)
         if len(fn) == 1:
@@ -105,9 +88,6 @@ def main():
         del df2
 
     inr200 = COMM.gather(np.array(inr200), root=0)
-    #condict = COMM.gather(condict, root=0)
-    #condict2 = COMM.gather(condict2, root=0)
-    #mdndict = COMM.gather(mdndict, root=0)
     Comlist = COMM.gather(Comlist, root=0)
     timinglist = COMM.gather(timinglist, root=0)
     if COMM.rank == 0:
