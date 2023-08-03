@@ -50,22 +50,22 @@ def main():
         df, time = af.datainitializing(fname)
         if len(df['posx']) > 10_000_000:
             df = df[df.index > 10_000_000]
+        
         timinglist = np.append(timinglist, time)
         avgposdf, avgveldf = af.COMfind(df, indexdf)
         CircComdf, CircVeldf = af.shrinkingcircmethod(df, avgposdf)
         r = af.radiusprep()
         df2 = af.calcs(df, r, CircComdf, CircVeldf)
-
         Comlist = np.concatenate((Comlist, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
-
+        i = int(i)
         fn = str(i)
         if len(fn) == 1:
             fn = "00" + fn
         if len(fn) == 2:
             fn = "0" + fn
-
+        
         if i % 32 == 0:
-            af.poscircleplot(df,i,fp,CircComdf,condict,fn,time)
+            #af.poscircleplot(df,i,fp,CircComdf,condict,fn,time)
             af.position(df,fn,fp,i,time)
             af.phase(df,fn,fp,i,time)
             af.phaseCOM(df,fn,fp,i,time)
@@ -80,9 +80,9 @@ def main():
             af.NpartCOM(df,fn,fp,i,time)
 
         inr200 = af.inr200func(df,CircComdf,inr200,fp)
-        condict = af.maxraddict(df,condict,CircComdf)
-        condict2 = af.maxraddict(df,condict2,CircComdf)
-        mdndict = af.medavgcalc(df,mdndict,fp)
+        #condict = af.maxraddict(df,condict,CircComdf)
+        #condict2 = af.maxraddict(df,condict2,CircComdf)
+        #mdndict = af.medavgcalc(df,mdndict,fp)
 
         del df
         del df2
