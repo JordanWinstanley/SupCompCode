@@ -34,7 +34,7 @@ def main():
     inr200 = []; timinglist = np.empty(shape=(0,0))
     for i, fname in splt:
         df, time = datainitializing(fname)
-        timinglist = np.append(timinglist, shape)
+        timinglist = np.append(timinglist, time)
         avgposdf, avgveldf = COMfind(df, indexdf)
         CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
         r = radiusprep()
@@ -286,8 +286,6 @@ def shrinkingcircmethod(df, COM):
         temp2 = df.copy()
         temp['posx'] -= posx; temp['posy'] -= posy; temp['posz'] -= posz;
         temp['rad'] = np.sqrt(temp['posx']**2 + temp['posy']**2 + temp['posz']**2)
-        #if COMM.rank == 0:
-             #print(temp['rad'])
         temp2 = temp2[temp['rad']<= radii]
         if len(temp2['posx'])==0:
             break
