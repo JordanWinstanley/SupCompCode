@@ -32,7 +32,7 @@ def main():
 
     Comlist = np.array([]).reshape(0,3)
     for i, fname in splt:
-        df = datainitializing(fname)
+        df, time = datainitializing(fname)
         avgposdf, avgveldf = COMfind(df, indexdf)
         CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
         r = radiusprep()
@@ -230,7 +230,7 @@ def datainitializing(filename):
         }
         df = pd.DataFrame(data, index = pids)
         time = f['Header'].attrs['Time']
-    return df
+    return df, time
 
 
 def findmiddleparts(snapshotlst):
