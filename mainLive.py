@@ -32,18 +32,20 @@ def main():
 
     timinglist = np.empty(shape=(0,0))
     Comlist = np.array([]).reshape(0,3)
+    inr200 = np.empty(shape=(0,0))
     for i, fname in splt:
         df, time = datainitializing(fname)
-        df = df.iloc[10_000_000:]
+        df = df[df.index > 10_000_000]
+        #print(df)
         timinglist = np.append(timinglist, time)
-        avgposdf, avgveldf = COMfind(df, indexdf)
-        CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
+        CircComdf, CircVeldf = COMfind(df, indexdf)
+        CircComdf, CircVeldf = shrinkingcircmethod(df, CircComdf)
         r = radiusprep()
         df2 = calcs(df, r, CircComdf, CircVeldf)
 
         Comlist = np.concatenate((Comlist, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
         #Prep work
-        boundlst = []; inr200 = []; mdnlist = []; avglst = []
+        boundlst = []; mdnlist = []; avglst = []
         x = [0,32,64,96,128,160,192,224,256]
         y = [0.05,0.10,0.25,0.5,0.75]
         condict2 = dict(); mdndict = dict()
@@ -82,8 +84,8 @@ def main():
             sigmavrplot(df2,fn,fp,i,k)
             sigmatotplot(df2,fn,fp,i,k)
             NpartCOM(df,fn,fp,i,k)
-
-        inr200 = inr200func(df,CircComdf,inr200,fp)
+        
+        inr200 = np.append(inr200, inr200func(df))
         #condict = maxraddict(df,condict,CircComdf)
         #condict2 = maxraddict(df,condict2,CircComdf)
         mdndict = medavgcalc(df,mdndict,fp)
@@ -91,7 +93,7 @@ def main():
         del df
         del df2
 
-    inr200 = COMM.gather(np.array(inr200), root=0)
+    inr200 = COMM.gather(inr200, root=0)
     timinglist = COMM.gather(timinglist, root = 0)
     #condict = COMM.gather(condict, root=0)
     #condict2 = COMM.gather(condict2, root=0)
@@ -101,11 +103,10 @@ def main():
         inr200 = np.concatenate(inr200)
         Comlist = np.concatenate(Comlist)
         timinglist = np.concatenate(timinglist)
-        print(timinglist)
-        inr200plot(inr200,fp,timinglist)
         COMplot(Comlist,fp,timinglist)
         COMradplot(Comlist,fp,timinglist)
         COMtestplot(Comlist,fp,timinglist)
+        inr200plot(inr200,fp,timinglist)
 
     print(f"Rank {COMM.rank} Finished")
     COMM.Barrier()
@@ -254,7 +255,9 @@ def findmiddleparts(snapshotlst):
             "velz": vel[:, 2]
         }
         df = pd.DataFrame(data, index=pids)
+        df = df[df.index > 10_000_000]
     i = 10
+
     df['posx'] = df['posx'] - df['posx'].mean()
     df['posy'] = df['posy'] - df['posy'].mean()
     df['posz'] = df['posz'] - df['posz'].mean()
@@ -282,10 +285,12 @@ def shrinkingcircmethod(df, COM):
     CircVeldf = pd.DataFrame(columns = ['velx','vely','velz'])
     posx = COM['posx'].iloc[0]; posy = COM['posy'].iloc[0]; posz = COM['posz'].iloc[0];
 
-
     for radii in radlist:
         temp = df.copy()
         temp2 = df.copy()
+
+        #print(temp2)
+
         temp['posx'] -= posx; temp['posy'] -= posy; temp['posz'] -= posz;
         temp['rad'] = np.sqrt(temp['posx']**2 + temp['posy']**2 + temp['posz']**2)
         #if COMM.rank == 0:
@@ -293,6 +298,9 @@ def shrinkingcircmethod(df, COM):
         temp2 = temp2[temp['rad']<= radii]
         if len(temp2['posx'])==0:
             break
+
+
+
         posx = temp2['posx'].mean(); posy = temp2['posy'].mean(); posz = temp2['posz'].mean()
         velx = temp2['velx'].mean(); vely = temp2['vely'].mean(); velz = temp2['velz'].mean()
     CircComdf.loc[len(CircComdf)] = [posx,posy,posz]
@@ -407,10 +415,10 @@ def calcs(df, r, COM, VEL):
     return df2
 
 
-def inr200func(df,COM,inrhalf,fp):
-    temp = df.copy(); tot = len(df['posx'])
-    inrhalf.append(len(temp[temp['radiusCOM']<=r200]))
-    return inrhalf
+def inr200func(df):
+    temp = df.copy()
+    x = len(temp[temp['radiusCOM']<=r200])
+    return x
 
 
 def maxraddict(df,condict,COM):
@@ -537,8 +545,6 @@ def masswithhalo(df2,filename,fp,i,k):
 
 
 def COMplot(COMlist,fp,timinglist):
-    #plt.style.use("dark_background")
-    timinglist = np.arange(0,15,15/len(COMlist[:,0]))
     fig = plt.figure()
     gs = fig.add_gridspec(2,2)
     (ax1, ax2), (ax3, ax4) = gs.subplots()
@@ -559,7 +565,6 @@ def COMplot(COMlist,fp,timinglist):
 
 
 def COMtestplot(COMlist,fp,timinglist):
-    timinglist = np.arange(0,15,15/len(COMlist[:,0]))
     Rlist = np.sqrt(COMlist[:,0]**2 + COMlist[:,1]**2 + COMlist[:,2]**2)
     fig = plt.figure()
     gs = fig.add_gridspec(4, hspace=0)
@@ -588,7 +593,7 @@ def COMradplot(COMlist,fp,timinglist):
 
 
 def inr200plot(r200,fp,timinglist):
-    plt.plot(x,r200,c='red')
+    plt.plot(timinglist,r200,c='red')
     plt.scatter(timinglist, r200, s=1, color='black')
     plt.ylabel("Num part in r200")
     plt.xlabel("Gyr")

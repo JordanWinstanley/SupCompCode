@@ -31,8 +31,10 @@ def main():
     COMM.Barrier()
 
     Comlist = np.array([]).reshape(0,3)
+    inr200 = []; timinglist = np.empty(shape=(0,0))
     for i, fname in splt:
         df, time = datainitializing(fname)
+        timinglist = np.append(timinglist, shape)
         avgposdf, avgveldf = COMfind(df, indexdf)
         CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
         r = radiusprep()
@@ -40,7 +42,7 @@ def main():
 
         Comlist = np.concatenate((Comlist, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
         #Prep work
-        boundlst = []; inr200 = []; mdnlist = []; avglst = []
+        boundlst = []; mdnlist = []; avglst = []
         x = [0,32,64,96,128,160,192,224,256]
         y = [0.05,0.10,0.25,0.5,0.75]
         condict2 = dict(); mdndict = dict()
@@ -93,13 +95,15 @@ def main():
     #condict2 = COMM.gather(condict2, root=0)
     #mdndict = COMM.gather(mdndict, root=0)
     Comlist = COMM.gather(Comlist, root=0)
+    timinglist = COMM.gather(timinglist, root=0)
     if COMM.rank == 0:
         inr200 = np.concatenate(inr200)
         Comlist = np.concatenate(Comlist)
-        inr200plot(inr200, fp)
-        COMplot(Comlist, fp)
-        COMradplot(Comlist, fp)
-        COMtestplot(Comlist, fp)
+        timinglist = np.concatenate(timinglist)
+        inr200plot(inr200, fp, timinglist)
+        COMplot(Comlist, fp, timinglist)
+        COMradplot(Comlist, fp, timinglist)
+        COMtestplot(Comlist, fp, timinglist)
 
     print(f"Rank {COMM.rank} Finished")
     COMM.Barrier()
@@ -530,9 +534,8 @@ def masswithhalo(df2,filename,fp,i,k):
     plt.close()
 
 
-def COMplot(COMlist,fp):
-    #plt.style.use("dark_background")
-    timinglist = np.arange(0,15,15/len(COMlist[:,0]))
+def COMplot(COMlist,fp,timinglist):
+
     fig = plt.figure()
     gs = fig.add_gridspec(2,2)
     (ax1, ax2), (ax3, ax4) = gs.subplots()
@@ -551,8 +554,7 @@ def COMplot(COMlist,fp):
     plt.close()
     #plt.style.use("default")
 
-def COMtestplot(COMlist,fp):
-    timinglist = np.arange(0,15,15/len(COMlist[:,0]))
+def COMtestplot(COMlist,fp,timinglist):
     Rlist = np.sqrt(COMlist[:,0]**2 + COMlist[:,1]**2 + COMlist[:,2]**2)
     fig = plt.figure()
     gs = fig.add_gridspec(4, hspace=0)
@@ -571,8 +573,7 @@ def COMtestplot(COMlist,fp):
 
 
 
-def COMradplot(COMlist,fp):
-    timinglist = np.arange(0,15,15/len(COMlist[:,0]))
+def COMradplot(COMlist,fp,timinglist):
     Rlist = np.sqrt(COMlist[:,0]**2 + COMlist[:,1]**2 + COMlist[:,2]**2)
     plt.plot(timinglist,Rlist,color='red',zorder=0)
     plt.scatter(timinglist,Rlist,s=0.2,color='black',zorder=1)
@@ -582,10 +583,9 @@ def COMradplot(COMlist,fp):
     plt.close()
 
 
-def inr200plot(r200,fp):
-    x = np.arange(0,15,15/len(r200))
-    plt.plot(x,r200,c='red')
-    plt.scatter(x, r200, s=1, color='black')
+def inr200plot(r200,fp,timinglist):
+    plt.plot(timinglist,r200,c='red',zorder=0)
+    plt.scatter(timinglist, r200, s=1, color='black',zorder=1)
     plt.ylabel("Num part in r200")
     plt.xlabel("Gyr")
     plt.savefig(fp+"plots/inr200/inr200.png",dpi=600)
