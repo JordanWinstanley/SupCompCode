@@ -91,6 +91,8 @@ def main():
     inr200 = COMM.gather(np.array(inr200), root=0)
     Comlist = COMM.gather(Comlist, root=0)
     timinglist = COMM.gather(timinglist, root=0)
+    COMM.Barrier()
+    
     if COMM.rank == 0:
         inr200 = np.concatenate(inr200)
         Comlist = np.concatenate(Comlist)
