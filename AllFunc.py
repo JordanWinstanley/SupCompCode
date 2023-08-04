@@ -368,6 +368,7 @@ def velhist(df,filename,fp,i,k):
     fig.suptitle(f"t = {round(k,1)} Gyr, Snap: {i}")
     fig.tight_layout()
     plt.savefig(fp+"plots/velhist/"+"velhist_"+filename,dpi=600)
+    plt.close()
 
 def density(df2,filename,fp,i,k):
     plt.loglog()
