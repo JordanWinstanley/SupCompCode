@@ -134,7 +134,7 @@ def findmiddleparts(snapshotlst):
             "velz": vel[:, 2]
         }
         df = pd.DataFrame(data, index=pids)
-    if len(df['posx'] > 10_000_000):
+    if len(df['posx']) > 10_000_000:
          df = df[df.index > 10_000_000]
     i = 10
     df['posx'] = df['posx'] - df['posx'].mean()
