@@ -119,7 +119,7 @@ def datainitializing(filename):
     return df, time
 
 
-def findmiddleparts(snapshotlst):
+def findmiddleparts(snapshotlst,i=10):
     with h5py.File("output/"+ snapshotlst[0], 'r') as f:
         NumPart = f['Header'].attrs['NumPart_Total'][()]
         pos = f['PartType1/Coordinates'][()]
@@ -136,7 +136,6 @@ def findmiddleparts(snapshotlst):
         df = pd.DataFrame(data, index=pids)
     if len(df['posx']) > 10_000_000:
          df = df[df.index > 10_000_000]
-    i = 10
     Ntot = len(df['posx'])
     df['posx'] = df['posx'] - df['posx'].mean()
     df['posy'] = df['posy'] - df['posx'].mean()
@@ -339,7 +338,9 @@ def position(df,filename,fp,i,k,CircComdf):
     plt.savefig(fp+"plots/pos/"+"position_"+filename,dpi=600)
     plt.close()
 
-    plt.hist2d(df['posx'],df['posy'], bins=(50,50),cmap=plt.cm.jet)
+
+    nb = 1000
+    plt.hist2d(df['posx'],df['posy'], bins=(nb,nb),cmap=plt.cm.jet)
     plt.scatter(CircComdf['posx'],CircComdf['posy'],s=1,zorder=1,c='red')
     plt.xlabel('x')
     plt.ylabel('y')
@@ -347,7 +348,7 @@ def position(df,filename,fp,i,k,CircComdf):
     plt.savefig(fp+"plots/pos/"+"positionhist_"+filename,dpi=600)
     plt.close()
 
-    plt.hexbin(df['posx'],df['posy'], gridsize=(50,50))
+    plt.hexbin(df['posx'],df['posy'], gridsize=(nb,nb))
     plt.scatter(CircComdf['posx'],CircComdf['posy'],s=1,zorder=1,c='red')
     plt.xlabel('x')
     plt.ylabel('y')
