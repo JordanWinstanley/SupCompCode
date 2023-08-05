@@ -137,6 +137,7 @@ def findmiddleparts(snapshotlst):
     if len(df['posx']) > 10_000_000:
          df = df[df.index > 10_000_000]
     i = 10
+    Ntot = len(df['posx'])
     df['posx'] = df['posx'] - df['posx'].mean()
     df['posy'] = df['posy'] - df['posx'].mean()
     df['posz'] = df['posz'] - df['posz'].mean()
@@ -146,7 +147,7 @@ def findmiddleparts(snapshotlst):
     z = temp.index
     dict = {"i":list(z)}
     temp = pd.DataFrame(dict)
-    return temp
+    return temp, Ntot
 
 
 def COMfind(df, indexdf):
@@ -294,6 +295,12 @@ def inr200func(df,COM,inrhalf,fp):
     inrhalf.append(len(temp[temp['radiusCOM']<=r200]))
     return inrhalf
 
+def in2r200func(df,COM,inrhalf,fp):
+    temp = df.copy(); tot = len(df['posx'])
+    r200 = (3/4/np.pi/200/rhocrit*par.M200)**(1/3)*1000
+    inrhalf.append(len(temp[temp['radiusCOM']<=2*r200]))
+    return inrhalf
+
 
 def maxraddict(df,condict,COM):
     temp=df.copy()
@@ -320,9 +327,10 @@ def medavgcalc(df, mdndict, fp):
 
 
 #Plotting
-def position(df,filename,fp,i,k):
+def position(df,filename,fp,i,k,CircComdf):
     lims = 2000
-    plt.scatter(df['posx'], df['posy'], s=0.1, color='black')
+    plt.scatter(df['posx'], df['posy'], s=0.1, color='black',zorder=0)
+    plt.scatter(CircComdf['posx'],CircComdf['posy'],s=1, color='red',zorder=2)
     plt.xlim(-lims, lims)
     plt.ylim(-lims, lims)
     plt.xlabel('x')
@@ -330,6 +338,23 @@ def position(df,filename,fp,i,k):
     plt.title(f"t = {round(k,1)} Gyr, snap: {i}")
     plt.savefig(fp+"plots/pos/"+"position_"+filename,dpi=600)
     plt.close()
+
+    plt.hist2d(df['posx'],df['posy'], bins=(50,50),cmap=plt.cm.jet)
+    plt.scatter(CircComdf['posx'],CircComdf['posy'],s=1,zorder=1,c='red')
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.title(f"t = {round(k,1)} Gyr, snap: {i}")
+    plt.savefig(fp+"plots/pos/"+"positionhist_"+filename,dpi=600)
+    plt.close()
+
+    plt.hexbin(df['posx'],df['posy'], gridsize=(50,50))
+    plt.scatter(CircComdf['posx'],CircComdf['posy'],s=1,zorder=1,c='red')
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.title(f"t = {round(k,1)} Gyr, snap: {i}")
+    plt.savefig(fp+"plots/pos/"+"positionhex_"+filename,dpi=600)
+    plt.close()
+
 
 
 def phase(df,filename,fp,i,k):
@@ -470,12 +495,40 @@ def COMradplot(COMlist,fp,timinglist):
     plt.close()
 
 
-def inr200plot(r200,fp,timinglist):
-    plt.plot(timinglist,r200,c='red',zorder=0)
-    plt.scatter(timinglist, r200, s=1, color='black',zorder=1)
-    plt.ylabel("Num part in r200")
+def inr200plot(r200,fp,timinglist,Ntot):
+    plt.plot(timinglist,r200/Ntot,c='red',zorder=0)
+    plt.scatter(timinglist, r200/Ntot, s=1, color='black',zorder=1)
+    plt.ylabel("Frac in r200")
     plt.xlabel("Gyr")
+    plt.title(f"Mass {par.M200}SM, beta = {par.beta}")
     plt.savefig(fp+"plots/inr200/inr200.png",dpi=600)
+    plt.close()
+
+def in2r200plot(r200,r2002,fp,timinglist,Ntot):
+    plt.plot(timinglist,r200/Ntot,c='black',label="r200")
+    plt.plot(timinglist,r2002/Ntot,c='red',label="2r200")
+    #plt.scatter(timinglist, r200/Ntot, s=1, color='black',zorder=1)
+    #plt.scatter(timinglist, r2002/Ntot, s=1, color='black',zorder=1) 
+    plt.ylabel("Frac in R")
+    plt.xlabel("Gyr")
+    plt.legend(loc='best')
+    plt.title(f"Mass {par.M200:.2e} , beta = {par.beta}")
+    plt.tight_layout()
+    plt.savefig(fp+"plots/inr200/in2r200.png",dpi=600)
+    plt.close()
+
+
+def masschange(r200,r2002,fp,timinglist,Ntot):
+    plt.plot(timinglist,r200/Ntot,c='black',label="r200")
+    plt.plot(timinglist,r2002/Ntot,c='red',label="2r200")
+    #plt.scatter(timinglist, r200/Ntot, s=1, color='black',zorder=1)
+    #plt.scatter(timinglist, r2002/Ntot, s=1, color='black',zorder=1) 
+    plt.ylabel("Frac in R")
+    plt.xlabel("Gyr")
+    plt.legend(loc='best')
+    plt.title(f"Mass {par.M200:.2e} , beta = {par.beta}")
+    plt.tight_layout()
+    plt.savefig(fp+"plots/inr200/in2r200.png",dpi=600)
     plt.close()
 
 

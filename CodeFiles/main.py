@@ -27,7 +27,7 @@ def main():
         snapshotlst = af.getsnapshots()
         plotfilepath,pltfiles = af.findplotdirec()
         plotfp = af.prepareplotfile(plotfilepath, pltfiles)
-        indexdf = af.findmiddleparts(snapshotlst)
+        indexdf,Ntot = af.findmiddleparts(snapshotlst)
         k = len(snapshotlst)
         snapshotlst = np.array(list(enumerate(snapshotlst)))
         snapsplt = np.array_split(snapshotlst,COMM.size)
@@ -37,20 +37,22 @@ def main():
         indexdf = None
         k = None
         plotfp = None
+        Ntot = None
 
     k = COMM.bcast(k, root=0)
     indexdf = COMM.bcast(indexdf, root=0)
     splt = COMM.scatter(snapsplt)
     fp = COMM.bcast(plotfp,root=0)
+    Ntot = COMM.bcast(Ntot, root=0)
     COMM.Barrier()
 
     Comlist = np.array([]).reshape(0,3)
     inr200 = []; timinglist = np.empty(shape=(0,0))
+    in2r200 = [];
     for i, fname in splt:
         df, time = af.datainitializing(fname)
         if len(df['posx']) > 10_000_000:
             df = df[df.index > 10_000_000]
-        
         timinglist = np.append(timinglist, time)
         avgposdf, avgveldf = af.COMfind(df, indexdf)
         CircComdf, CircVeldf = af.shrinkingcircmethod(df, avgposdf)
@@ -66,7 +68,7 @@ def main():
         
         if i % 32 == 0:
             #af.poscircleplot(df,i,fp,CircComdf,condict,fn,time)
-            af.position(df,fn,fp,i,time)
+            af.position(df,fn,fp,i,time,CircComdf)
             af.velhist(df,fn,fp,i,time)
             af.phase(df,fn,fp,i,time)
             af.phaseCOM(df,fn,fp,i,time)
@@ -81,6 +83,7 @@ def main():
             af.NpartCOM(df,fn,fp,i,time)
 
         inr200 = af.inr200func(df,CircComdf,inr200,fp)
+        in2r200 = af.in2r200func(df,CircComdf,in2r200,fp)
         #condict = af.maxraddict(df,condict,CircComdf)
         #condict2 = af.maxraddict(df,condict2,CircComdf)
         #mdndict = af.medavgcalc(df,mdndict,fp)
@@ -89,15 +92,18 @@ def main():
         del df2
 
     inr200 = COMM.gather(np.array(inr200), root=0)
+    in2r200 = COMM.gather(np.array(in2r200), root=0)
     Comlist = COMM.gather(Comlist, root=0)
     timinglist = COMM.gather(timinglist, root=0)
     COMM.Barrier()
     
     if COMM.rank == 0:
         inr200 = np.concatenate(inr200)
+        in2r200 = np.concatenate(in2r200)
         Comlist = np.concatenate(Comlist)
         timinglist = np.concatenate(timinglist)
-        af.inr200plot(inr200, fp, timinglist)
+        af.inr200plot(inr200, fp, timinglist,Ntot)
+        af.in2r200plot(inr200,in2r200, fp, timinglist,Ntot)
         af.COMplot(Comlist, fp, timinglist)
         af.COMradplot(Comlist, fp, timinglist)
         af.COMtestplot(Comlist, fp, timinglist)
