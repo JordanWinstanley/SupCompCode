@@ -61,7 +61,7 @@ def directorycheck(fp):
 	"plots": ["bound","COM","Density","mass","phase","pos","maxr","sigmar",'sigmatot',"phaseCOM","circleplot","inrhalf","densitywithhalo",\
 	"masswithhalo","avgvel","avgvelsquared", "mdnmean", "RmassEnc","inr200","npartfromcent","velhist"],
 
-	"quickpos":["eps","pos","half","with dot","extra", "half/png","half/eps","with dot/png", \
+	"extras":["eps","pos","half","with dot","extra", "half/png","half/eps","with dot/png", \
 	"with dot/eps", "extra/png","extra/eps","partpath", "partpathwhole", "hist","half with dot","half with dot/eps","half with dot/png",\
 	"galwithDM", "galwithnoDM"],
 
@@ -338,7 +338,6 @@ def position(df,filename,fp,i,k,CircComdf):
     plt.savefig(fp+"plots/pos/"+"position_"+filename,dpi=600)
     plt.close()
 
-
     nb = 1000
     plt.hist2d(df['posx'],df['posy'], bins=(nb,nb),cmap=plt.cm.jet)
     plt.scatter(CircComdf['posx'],CircComdf['posy'],s=1,zorder=1,c='red')
@@ -355,6 +354,19 @@ def position(df,filename,fp,i,k,CircComdf):
     plt.title(f"t = {round(k,1)} Gyr, snap: {i}")
     plt.savefig(fp+"plots/pos/"+"positionhex_"+filename,dpi=600)
     plt.close()
+
+    npoint = 1600
+    temp = df.copy()    
+    temp = temp.sort_values(by=['radiusCOM']).head(npoint)
+
+    plt.quiver(temp['posx'],temp['posy'],temp['velxCOM'],temp['velyCOM'],color='green')
+    plt.scatter(CircComdf['posx'],CircComdf['posy'],s=1,zorder=1,c='red')
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.title(f"t = {round(k,1)} Gyr, snap: {i}")
+    plt.savefig(fp+"plots/pos/"+"positionquiv_"+filename,dpi=600)
+    plt.close()
+    del temp
 
 
 
