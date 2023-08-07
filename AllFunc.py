@@ -371,8 +371,9 @@ def position(df,filename,fp,i,k,CircComdf):
 def liveposition(df,fulldf,filename,fp,i,k,CircComdf):
     lims = 2000
     plt.scatter(fulldf['posx'],fulldf['posy'],s=0.1,color='black',zorder=0)
-    plt.scatter(df['posx'], df['posy'], s=0.1, color='red',zorder=1)
-    plt.scatter(CircComdf['posx'],CircComdf['posy'],s=1, color='green',zorder=2)
+    plt.scatter(df['posx'], df['posy'], s=0.1, color='blue',zorder=1)
+    plt.scatter(CircComdf['posx'],CircComdf['posy'],s=1, color='red',zorder=2)
+    plt.scatter(fulldf['posx'].mean(),fulldf['posy'].mean(),s=1,color='purple',zorder=3)
     plt.xlim(-lims, lims)
     plt.ylim(-lims, lims)
     plt.xlabel('x')
