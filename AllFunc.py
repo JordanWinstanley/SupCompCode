@@ -368,6 +368,18 @@ def position(df,filename,fp,i,k,CircComdf):
     plt.close()
     del temp
 
+def liveposition(df,fulldf,filename,fp,i,k,CircComdf):
+    lims = 2000
+    plt.scatter(fulldf['posx'],fulldf['posy'],s=0.1,color='black',zorder=0)
+    plt.scatter(df['posx'], df['posy'], s=0.1, color='red',zorder=1)
+    plt.scatter(CircComdf['posx'],CircComdf['posy'],s=1, color='green',zorder=2)
+    plt.xlim(-lims, lims)
+    plt.ylim(-lims, lims)
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.title(f"t = {round(k,1)} Gyr, snap: {i}")
+    plt.savefig(fp+"plots/pos/"+"liveposition_"+filename,dpi=600)
+    plt.close()
 
 
 def phase(df,filename,fp,i,k):
