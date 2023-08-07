@@ -180,13 +180,13 @@ def shrinkingcircmethod(df, COM):
     return CircComdf, CircVeldf
 
 def recenterdf(df):
-    df['posx'] -= df['posx'].mean()
-    df['posy'] -= df['posy'].mean()
-    df['posz'] -= df['posz'].mean()
+    df['posx'] -= df[df.index <= 10_000_000]['posx'].mean()
+    df['posy'] -= df[df.index <= 10_000_000]['posy'].mean()
+    df['posz'] -= df[df.index <= 10_000_000]['posz'].mean()
 
-    df['velx'] -= df['velx'].mean()
-    df['vely'] -= df['vely'].mean()
-    df['velz'] -= df['velz'].mean()
+    df['velx'] -= df[df.index <= 10_000_000]['velx'].mean()
+    df['vely'] -= df[df.index <= 10_000_000]['vely'].mean()
+    df['velz'] -= df[df.index <= 10_000_000]['velz'].mean()
     return df
 
 
