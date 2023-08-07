@@ -285,16 +285,16 @@ def calcs(df, r, COM, VEL):
     df2['sigmatot'] = df2['sigmax'] + df2['sigmay'] + df2['sigmaz']
     df2['avgvel'] = np.sqrt(df2['avgvelx']**2 + df2['avgvely']**2 + df2['avgvelz']**2)
     df2['avgvel2'] = np.sqrt(df2['avgvelx2']**2 + df2['avgvely2']**2 + df2['avgvelz2']**2)
-    return df2
+    return df, df2
 
 
-def inr200func(df,COM,inrhalf,fp):
+def inr200func(df,inrhalf):
     temp = df.copy(); tot = len(df['posx'])
     r200 = (3/4/np.pi/200/rhocrit*par.M200)**(1/3)*1000
     inrhalf.append(len(temp[temp['radiusCOM']<=r200]))
     return inrhalf
 
-def in2r200func(df,COM,inrhalf,fp):
+def in2r200func(df,inrhalf):
     temp = df.copy(); tot = len(df['posx'])
     r200 = (3/4/np.pi/200/rhocrit*par.M200)**(1/3)*1000
     inrhalf.append(len(temp[temp['radiusCOM']<=2*r200]))
