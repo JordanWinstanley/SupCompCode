@@ -179,6 +179,16 @@ def shrinkingcircmethod(df, COM):
     CircVeldf.loc[len(CircVeldf)] = [velx,vely,velz] 
     return CircComdf, CircVeldf
 
+def recenterdf(df):
+    df['posx'] -= df['posx'].mean()
+    df['posy'] -= df['posy'].mean()
+    df['posz'] -= df['posz'].mean()
+
+    df['velx'] -= df['velx'].mean()
+    df['vely'] -= df['vely'].mean()
+    df['velz'] -= df['velz'].mean()
+    return df
+
 
 #Functions for Bulk Calcs
 def radiusprep(x=-1,y=3,z=0.1):
