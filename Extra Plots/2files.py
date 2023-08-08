@@ -8,9 +8,9 @@ import sys
 
 rhocrit = 2.7755e11
 #fp1 = "/Users/jordan.winstanley/Library/CloudStorage/OneDrive-Personal/AAA - Uni/Project - Masters/Simulations/Original functions/1r200/0deg/nodisk/m1e12/Circular/b0/Analytical"
-fp1 = "../../0deg/nodisk/m1e12/Circular/b0/Analytical"
+fp1 = "../../0deg/nodisk/m1e11/Circular/b0/Analytical"
 #fp2 = "/Users/jordan.winstanley/Library/CloudStorage/OneDrive-Personal/AAA - Uni/Project - Masters/Simulations/Original functions/1r200/0deg/nodisk/m1e12/Circular/b3/Analytical"
-fp2 = "../../0deg/nodisk/m1e12/Circular/b0/Live"
+fp2 = "../../0deg/nodisk/m1e11/Circular/b0/Live"
 
 
 COMM = MPI.COMM_WORLD
@@ -138,7 +138,7 @@ def main():
         Comlist2 = np.concatenate(Comlist2)
 
 
-        M = 1e12
+        M = 1e11
         fig = plt.figure()
         gs = fig.add_gridspec(2,2)
         (ax1, ax2), (ax3, ax4) = gs.subplots()
