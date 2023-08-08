@@ -107,17 +107,13 @@ def main():
 
     COMM.Barrier()
 
-    Comlist1 = np.array([]).reshape(0,3)
     inr2001 = COMM.gather(np.array(inr2001), root=0)
     in2r2001 = COMM.gather(np.array(in2r2001), root=0)
     timinglist1 = COMM.gather(timinglist1, root=0)
 
-    Comlist2 = np.array([]).reshape(0,3)
     inr2002 = COMM.gather(np.array(inr2002), root=0)
     in2r2002 = COMM.gather(np.array(in2r2002), root=0)
     timinglist2 = COMM.gather(timinglist2, root=0)
-
-
 
     COMM.Barrier()
 
