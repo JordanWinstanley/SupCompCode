@@ -128,6 +128,7 @@ def main():
         Comlist2 = COMM.gather(Comlist2, root=0)
 
 
+        M = 1e12
         fig = plt.figure()
         gs = fig.add_gridspec(2,2)
         (ax1, ax2), (ax3, ax4) = gs.subplots()
@@ -145,8 +146,8 @@ def main():
         ax2.set_ylabel("Z")
         ax3.set_xlabel("Y")
         ax3.set_ylabel("Z")
-        #ax2.legend()
-
+        plt.legend(loc='best')
+        fig.suptitle(f"Mass: {M:.1e}")
         fig.tight_layout()
         plt.xlabel("x")
         plt.savefig("../../Plots/ExtraPlots/2FILECOM.png",dpi=600)
@@ -160,6 +161,7 @@ def main():
         plt.ylabel("rad")
         plt.xlabel("Time in Gyr")
         plt.legend(loc='best')
+        plt.title(f"Mass {M:.1e}")
         plt.tight_layout()
         plt.savefig("../../Plots/ExtraPlots/2FILERAD.png",dpi=600)
         plt.close()
