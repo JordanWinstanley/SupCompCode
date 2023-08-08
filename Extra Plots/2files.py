@@ -8,9 +8,9 @@ import sys
 
 
 #fp1 = "/Users/jordan.winstanley/Library/CloudStorage/OneDrive-Personal/AAA - Uni/Project - Masters/Simulations/Original functions/1r200/0deg/nodisk/m1e12/Circular/b0/Analytical"
-fp1 = "../../1r200/0deg/nodisk/m1e12/Circular/b0/Analytical"
+fp1 = "../../0deg/nodisk/m1e12/Circular/b0/Analytical"
 #fp2 = "/Users/jordan.winstanley/Library/CloudStorage/OneDrive-Personal/AAA - Uni/Project - Masters/Simulations/Original functions/1r200/0deg/nodisk/m1e12/Circular/b3/Analytical"
-fp2 = "../../1r200/0deg/nodisk/m1e12/Circular/b3/Analytical"
+fp2 = "../../0deg/nodisk/m1e12/Circular/b0/Live"
 
 
 COMM = MPI.COMM_WORLD
@@ -19,16 +19,16 @@ def main():
     if COMM.rank == 0:
         snapshotlst1 = getsnapshotsnew(fp1)
         snapshotlst2 = getsnapshotsnew(fp2)
-        snapshotlst3 = getsnapshotsnew(fp3)
+
         indexdf1,Ntot1 = findmiddleparts(snapshotlst1,fp1)
         indexdf2,Ntot2 = findmiddleparts(snapshotlst2,fp2)
-        indexdf3,Ntot3 = findmiddleparts(snapshotlst3,fp3)
+
         snapshotlst1 = np.array(list(enumerate(snapshotlst1)))
         snapshotlst2 = np.array(list(enumerate(snapshotlst2)))
-        snapshotlst3 = np.array(list(enumerate(snapshotlst3)))
+
         snapsplt1 = np.array_split(snapshotlst1,COMM.size)
         snapsplt2 = np.array_split(snapshotlst2,COMM.size)
-        snapsplt3 = np.array_split(snapshotlst3,COMM.size)
+
     else:
         snapshotlst1 = None
         snapsplt1 = None 
@@ -38,7 +38,7 @@ def main():
         snapsplt2 = None 
         indexdf2 = None
         Ntot2 = None
-        snapshotlst3 = None
+
 
     
     indexdf1 = COMM.bcast(indexdf1, root=0)
@@ -60,7 +60,13 @@ def main():
         M200 = 1e12
         df, time = datainitializing(fname,fp1)
         if len(df['posx']) > 10_000_000:
+            df = recenterdf(df)
+            fulldf = df[df.index <= 10_000_000]
             df = df[df.index > 10_000_000]
+            Live = True
+        else:
+            fulldf = None
+            Live = False
         timinglist1 = np.append(timinglist1, time)
         avgposdf, avgveldf = COMfind(df, indexdf1)
         CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
@@ -77,7 +83,13 @@ def main():
         M200 = 1e12
         df, time = datainitializing(fname,fp2)
         if len(df['posx']) > 10_000_000:
+            df = recenterdf(df)
+            fulldf = df[df.index <= 10_000_000]
             df = df[df.index > 10_000_000]
+            Live = True
+        else:
+            fulldf = None
+            Live = False
         timinglist2 = np.append(timinglist2, time)
         avgposdf, avgveldf = COMfind(df, indexdf1)
         CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
@@ -299,6 +311,17 @@ def in2r200func(df,inrhalf,M200=1e12):
     r200 = (3/4/np.pi/200/rhocrit*M200)**(1/3)*1000
     inrhalf.append(len(temp[temp['radiusCOM']<=2*r200]))
     return inrhalf
+
+def recenterdf(df):
+    df['posx'] -= df[df.index <= 10_000_000]['posx'].mean()
+    df['posy'] -= df[df.index <= 10_000_000]['posy'].mean()
+    df['posz'] -= df[df.index <= 10_000_000]['posz'].mean()
+
+    df['velx'] -= df[df.index <= 10_000_000]['velx'].mean()
+    df['vely'] -= df[df.index <= 10_000_000]['vely'].mean()
+    df['velz'] -= df[df.index <= 10_000_000]['velz'].mean()
+    return df
+
 
 if __name__ == "__main__":
     main()
