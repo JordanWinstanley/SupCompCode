@@ -145,11 +145,11 @@ def main():
         ax2.set_ylabel("Z")
         ax3.set_xlabel("Y")
         ax3.set_ylabel("Z")
-        ax2.legend()
+        #ax2.legend()
 
         fig.tight_layout()
         plt.xlabel("x")
-        plt.savefig("../../1r200/Plots/ExtraPlots/2FILECOM.png",dpi=600)
+        plt.savefig("../../Plots/ExtraPlots/2FILECOM.png",dpi=600)
         plt.close()
 
 
@@ -161,7 +161,7 @@ def main():
         plt.xlabel("Time in Gyr")
         plt.legend(loc='best')
         plt.tight_layout()
-        plt.savefig("../../1r200/Plots/ExtraPlots/2FILERAD.png",dpi=600)
+        plt.savefig("../../Plots/ExtraPlots/2FILERAD.png",dpi=600)
         plt.close()
 
 
