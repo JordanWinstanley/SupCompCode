@@ -52,7 +52,13 @@ def main():
     for i, fname in splt:
         df, time = af.datainitializing(fname)
         if len(df['posx']) > 10_000_000:
+            df = af.recenterdf(df)
+            fulldf = df[df.index <= 10_000_000]
             df = df[df.index > 10_000_000]
+            Live = True
+        else:
+            fulldf = None
+            Live = False
         timinglist = np.append(timinglist, time)
         avgposdf, avgveldf = af.COMfind(df, indexdf)
         CircComdf, CircVeldf = af.shrinkingcircmethod(df, avgposdf)
@@ -69,6 +75,8 @@ def main():
         if i % 32 == 0:
             #af.poscircleplot(df,i,fp,CircComdf,condict,fn,time)
             af.position(df,fn,fp,i,time,CircComdf)
+            if Live == True:
+                af.liveposition(df,fulldf,fn,fp,i,time,CircComdf)
             af.velhist(df,fn,fp,i,time)
             af.phase(df,fn,fp,i,time)
             af.phaseCOM(df,fn,fp,i,time)

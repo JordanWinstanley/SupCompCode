@@ -79,6 +79,7 @@ def main():
         in2r2001 = in2r200func(df,in2r2001)
 
         del df
+        del fulldf
 
     for i, fname in splt2:
         M200 = 1e12
@@ -91,8 +92,9 @@ def main():
         else:
             fulldf = None
             Live = False
+        print(df.header)
         timinglist2 = np.append(timinglist2, time)
-        avgposdf, avgveldf = COMfind(df, indexdf1)
+        avgposdf, avgveldf = COMfind(df, indexdf2)
         CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
         df = bonuscalc(df,CircComdf, CircVeldf)
         Comlist2 = np.concatenate((Comlist2, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
@@ -101,6 +103,7 @@ def main():
         in2r2002 = in2r200func(df,in2r2002)
 
         del df
+        del fulldf
 
     COMM.Barrier()
 
@@ -206,6 +209,7 @@ def bonuscalc(df, COM, VEL):
     df['vr'] = df['posx'] * df['velx'] + df['posy'] * df['vely'] + df['posz'] * df['velz']; df['vr'] /= df['radius']
     df['vrCOM'] = df['posxCOM'] * df['velxCOM'] + df['posyCOM'] * df['velyCOM'] + df['poszCOM'] * df['velzCOM']; df['vrCOM'] /= df['radiusCOM']
     return df
+
 
 def getsnapshotsnew(fp):
     files = sorted(os.listdir(fp + "/output/"))

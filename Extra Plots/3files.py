@@ -93,7 +93,7 @@ def main():
         if len(df['posx']) > 10_000_000:
             df = df[df.index > 10_000_000]
         timinglist2 = np.append(timinglist2, time)
-        avgposdf, avgveldf = COMfind(df, indexdf1)
+        avgposdf, avgveldf = COMfind(df, indexdf2)
         CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
         df = bonuscalc(df,CircComdf, CircVeldf)
         #Comlist = np.concatenate((Comlist, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
@@ -110,7 +110,7 @@ def main():
         if len(df['posx']) > 10_000_000:
             df = df[df.index > 10_000_000]
         timinglist3 = np.append(timinglist3, time)
-        avgposdf, avgveldf = COMfind(df, indexdf1)
+        avgposdf, avgveldf = COMfind(df, indexdf3)
         CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
         df = bonuscalc(df,CircComdf, CircVeldf)
         #Comlist = np.concatenate((Comlist, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
@@ -171,7 +171,7 @@ def main():
         plt.title(f"Mass = {M200:.2e}, Analytical Potential")
 
         plt.tight_layout()
-        plt.savefig("../../1r200/Plots/ExtraPlots/inr200.png",dpi=600)
+        plt.savefig("../../1r200/Plots/ExtraPlots/3FILEinr200.png",dpi=600)
         plt.close()
 
 
