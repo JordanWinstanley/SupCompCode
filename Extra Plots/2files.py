@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import os
 import sys
 
-
+rhocrit = 2.7755e11
 #fp1 = "/Users/jordan.winstanley/Library/CloudStorage/OneDrive-Personal/AAA - Uni/Project - Masters/Simulations/Original functions/1r200/0deg/nodisk/m1e12/Circular/b0/Analytical"
 fp1 = "../../0deg/nodisk/m1e12/Circular/b0/Analytical"
 #fp2 = "/Users/jordan.winstanley/Library/CloudStorage/OneDrive-Personal/AAA - Uni/Project - Masters/Simulations/Original functions/1r200/0deg/nodisk/m1e12/Circular/b3/Analytical"
@@ -128,12 +128,12 @@ def main():
         inr2001 = np.concatenate(inr2001)
         in2r2001 = np.concatenate(in2r2001)
         timinglist1 = np.concatenate(timinglist1)
-        Comlist1 = COMM.gather(Comlist1, root=0)
+        Comlist1 = np.concatenate(Comlist1)
 
         inr2002 = np.concatenate(inr2002)
         in2r2002 = np.concatenate(in2r2002)
         timinglist2 = np.concatenate(timinglist2)
-        Comlist2 = COMM.gather(Comlist2, root=0)
+        Comlist2 = np.concatenate(Comlist2)
 
 
         M = 1e12
@@ -215,7 +215,6 @@ def bonuscalc(df, COM, VEL):
     df['vrCOM'] = df['posxCOM'] * df['velxCOM'] + df['posyCOM'] * df['velyCOM'] + df['poszCOM'] * df['velzCOM']; df['vrCOM'] /= df['radiusCOM']
     return df
 
-
 def getsnapshotsnew(fp):
     files = sorted(os.listdir(fp + "/output/"))
     snapshotlst = []
@@ -223,7 +222,6 @@ def getsnapshotsnew(fp):
         if "snapshot" in item:
             snapshotlst.append(item)
     return sorted(snapshotlst)
-
 
 def datainitializing(filename,fp): 
     with h5py.File(fp + "/output/"+ filename, 'r') as f:
@@ -244,7 +242,6 @@ def datainitializing(filename,fp):
         df = pd.DataFrame(data, index = pids)
         time = f['Header'].attrs['Time']
     return df, time
-
 
 def findmiddleparts(snapshotlst,fp,i=10):
     with h5py.File(fp + "/output/"+ snapshotlst[0], 'r') as f:
@@ -275,7 +272,6 @@ def findmiddleparts(snapshotlst,fp,i=10):
     temp = pd.DataFrame(dict)
     return temp, Ntot
 
-
 def COMfind(df, indexdf):
     avgposdf = pd.DataFrame(columns = ['posx','posy','posz'])
     avgveldf = pd.DataFrame(columns = ['velx','vely','velz'])
@@ -283,7 +279,6 @@ def COMfind(df, indexdf):
     avgposdf.loc[len(avgposdf)] = [temp['posx'].mean(),temp['posy'].mean(),temp['posz'].mean()]
     avgveldf.loc[len(avgveldf)] = [temp['velx'].mean(),temp['vely'].mean(),temp['velz'].mean()]
     return avgposdf, avgveldf
-
 
 def shrinkingcircmethod(df, COM):
     radlist = 10**np.arange(3,0,-0.1)
@@ -305,10 +300,6 @@ def shrinkingcircmethod(df, COM):
     CircComdf.loc[len(CircComdf)] = [posx,posy,posz]
     CircVeldf.loc[len(CircVeldf)] = [velx,vely,velz] 
     return CircComdf, CircVeldf
-
-
-rhocrit = 2.7755e11
-
 
 def inr200func(df,inrhalf,M200=1e12):
     temp = df.copy(); tot = len(df['posx'])
