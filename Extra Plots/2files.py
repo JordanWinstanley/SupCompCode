@@ -49,7 +49,8 @@ def main():
     splt2 = COMM.scatter(snapsplt2)
     Ntot2 = COMM.bcast(Ntot2, root=0)
 
-
+    Comlist1 = np.array([]).reshape(0,3)
+    Comlist2 = np.array([]).reshape(0,3)
     inr2001 = []; inr2002 = [];
     in2r2001 = []; in2r2002 = [];
     timinglist1 = np.empty(shape=(0,0))

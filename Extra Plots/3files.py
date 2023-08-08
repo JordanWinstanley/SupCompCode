@@ -46,21 +46,23 @@ def main():
         Ntot3 = None
     
 
-    Comlist1 = np.array([]).reshape(0,3)
+    
     indexdf1 = COMM.bcast(indexdf1, root=0)
     splt1 = COMM.scatter(snapsplt1)
     Ntot1 = COMM.bcast(Ntot1, root=0)
 
-    Comlist2 = np.array([]).reshape(0,3)
     indexdf2 = COMM.bcast(indexdf2, root=0)
     splt2 = COMM.scatter(snapsplt2)
     Ntot2 = COMM.bcast(Ntot2, root=0)
 
-    Comlist3 = np.array([]).reshape(0,3)
     indexdf3 = COMM.bcast(indexdf3, root=0)
     splt3 = COMM.scatter(snapsplt3)
     Ntot3 = COMM.bcast(Ntot3, root=0)
 
+
+    Comlist1 = np.array([]).reshape(0,3)
+    Comlist2 = np.array([]).reshape(0,3)
+    Comlist3 = np.array([]).reshape(0,3)
     inr2001 = []; inr2002 = []; inr2003 = [];
     in2r2001 = []; in2r2002 = []; in2r2003 = [];
     timinglist1 = np.empty(shape=(0,0))
