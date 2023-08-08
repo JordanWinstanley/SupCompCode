@@ -62,7 +62,8 @@ def main():
         df, time = datainitializing(fname,fp1)
         if len(df['posx']) > 10_000_000:
             df = recenterdf(df)
-            fulldf = df[df.index <= 10_000_000]
+            #fulldf = df[df.index <= 10_000_000]
+            fulldf = None
             df = df[df.index > 10_000_000]
             Live = True
         else:
@@ -86,7 +87,8 @@ def main():
         df, time = datainitializing(fname,fp2)
         if len(df['posx']) > 10_000_000:
             df = recenterdf(df)
-            fulldf = df[df.index <= 10_000_000]
+            #fulldf = df[df.index <= 10_000_000]
+            fulldf = None
             df = df[df.index > 10_000_000]
             Live = True
         else:
