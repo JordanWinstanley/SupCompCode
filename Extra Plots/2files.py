@@ -92,7 +92,6 @@ def main():
         else:
             fulldf = None
             Live = False
-        print(df.header)
         timinglist2 = np.append(timinglist2, time)
         avgposdf, avgveldf = COMfind(df, indexdf2)
         CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
