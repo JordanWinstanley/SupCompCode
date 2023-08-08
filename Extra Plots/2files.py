@@ -56,6 +56,8 @@ def main():
     timinglist1 = np.empty(shape=(0,0))
     timinglist2 = np.empty(shape=(0,0))
 
+    print(f"Rank: {COMM.rank}, Checkpoint 1",flush=True)
+
     
     for i, fname in splt1:
         M200 = 1e12
@@ -82,6 +84,8 @@ def main():
         del df
         del fulldf
 
+    print(f"Rank: {COMM.rank}, Checkpoint 2",flush=True)
+
     for i, fname in splt2:
         M200 = 1e12
         df, time = datainitializing(fname,fp2)
@@ -107,6 +111,8 @@ def main():
         del fulldf
 
     COMM.Barrier()
+
+    print(f"Rank: {COMM.rank}, Checkpoint 3",flush=True)
 
     inr2001 = COMM.gather(np.array(inr2001), root=0)
     in2r2001 = COMM.gather(np.array(in2r2001), root=0)
