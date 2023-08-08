@@ -17,6 +17,165 @@ fp3 = "../../1r200/0deg/nodisk/m1e12/Circular/b5/Analytical"
 
 COMM = MPI.COMM_WORLD
 
+def main():
+    if COMM.rank == 0:
+        snapshotlst1 = getsnapshotsnew(fp1)
+        snapshotlst2 = getsnapshotsnew(fp2)
+        snapshotlst3 = getsnapshotsnew(fp3)
+        indexdf1,Ntot1 = findmiddleparts(snapshotlst1,fp1)
+        indexdf2,Ntot2 = findmiddleparts(snapshotlst2,fp2)
+        indexdf3,Ntot3 = findmiddleparts(snapshotlst3,fp3)
+        snapshotlst1 = np.array(list(enumerate(snapshotlst1)))
+        snapshotlst2 = np.array(list(enumerate(snapshotlst2)))
+        snapshotlst3 = np.array(list(enumerate(snapshotlst3)))
+        snapsplt1 = np.array_split(snapshotlst1,COMM.size)
+        snapsplt2 = np.array_split(snapshotlst2,COMM.size)
+        snapsplt3 = np.array_split(snapshotlst3,COMM.size)
+    else:
+        snapshotlst1 = None
+        snapsplt1 = None 
+        indexdf1 = None
+        Ntot1 = None
+        snapshotlst2 = None
+        snapsplt2 = None 
+        indexdf2 = None
+        Ntot2 = None
+        snapshotlst3 = None
+        snapsplt3 = None 
+        indexdf3 = None
+        Ntot3 = None
+    
+
+    Comlist1 = np.array([]).reshape(0,3)
+    indexdf1 = COMM.bcast(indexdf1, root=0)
+    splt1 = COMM.scatter(snapsplt1)
+    Ntot1 = COMM.bcast(Ntot1, root=0)
+
+    Comlist2 = np.array([]).reshape(0,3)
+    indexdf2 = COMM.bcast(indexdf2, root=0)
+    splt2 = COMM.scatter(snapsplt2)
+    Ntot2 = COMM.bcast(Ntot2, root=0)
+
+    Comlist3 = np.array([]).reshape(0,3)
+    indexdf3 = COMM.bcast(indexdf3, root=0)
+    splt3 = COMM.scatter(snapsplt3)
+    Ntot3 = COMM.bcast(Ntot3, root=0)
+
+    inr2001 = []; inr2002 = []; inr2003 = [];
+    in2r2001 = []; in2r2002 = []; in2r2003 = [];
+    timinglist1 = np.empty(shape=(0,0))
+    timinglist2 = np.empty(shape=(0,0))
+    timinglist3 = np.empty(shape=(0,0))
+
+    
+    for i, fname in splt1:
+        M200 = 1e12
+        df, time = datainitializing(fname,fp1)
+        if len(df['posx']) > 10_000_000:
+            df = df[df.index > 10_000_000]
+        timinglist1 = np.append(timinglist1, time)
+        avgposdf, avgveldf = COMfind(df, indexdf1)
+        CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
+        df = bonuscalc(df,CircComdf, CircVeldf)
+        #Comlist = np.concatenate((Comlist, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
+    
+        Comlist1 = np.concatenate((Comlist1, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
+        inr2001 = inr200func(df,inr2001)
+        in2r2001 = in2r200func(df,in2r2001)
+
+        del df
+
+    for i, fname in splt2:
+        M200 = 1e12
+        df, time = datainitializing(fname,fp2)
+        if len(df['posx']) > 10_000_000:
+            df = df[df.index > 10_000_000]
+        timinglist2 = np.append(timinglist2, time)
+        avgposdf, avgveldf = COMfind(df, indexdf1)
+        CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
+        df = bonuscalc(df,CircComdf, CircVeldf)
+        #Comlist = np.concatenate((Comlist, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
+    
+        Comlist2 = np.concatenate((Comlist2, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
+        inr2002 = inr200func(df,inr2002)
+        in2r2002 = in2r200func(df,in2r2002)
+
+        del df
+
+    for i, fname in splt3:
+        M200 = 1e12
+        df, time = datainitializing(fname,fp3)
+        if len(df['posx']) > 10_000_000:
+            df = df[df.index > 10_000_000]
+        timinglist3 = np.append(timinglist3, time)
+        avgposdf, avgveldf = COMfind(df, indexdf1)
+        CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
+        df = bonuscalc(df,CircComdf, CircVeldf)
+        #Comlist = np.concatenate((Comlist, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
+
+        Comlist3 = np.concatenate((Comlist3, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
+        inr2003 = inr200func(df,inr2003)
+        in2r2003 = in2r200func(df,in2r2003)
+
+        del df
+
+    COMM.Barrier()
+
+    inr2001 = COMM.gather(np.array(inr2001), root=0)
+    in2r2001 = COMM.gather(np.array(in2r2001), root=0)
+    timinglist1 = COMM.gather(timinglist1, root=0)
+    Comlist1 = COMM.gather(Comlist1, root=0)
+
+    inr2002 = COMM.gather(np.array(inr2002), root=0)
+    in2r2002 = COMM.gather(np.array(in2r2002), root=0)
+    timinglist2 = COMM.gather(timinglist2, root=0)
+    Comlist2 = COMM.gather(Comlist2, root=0)
+
+    inr2003 = COMM.gather(np.array(inr2003), root=0)
+    in2r2003 = COMM.gather(np.array(in2r2003), root=0)
+    timinglist3 = COMM.gather(timinglist3, root=0)
+    Comlist3 = COMM.gather(Comlist3, root=0)
+
+    COMM.Barrier()
+
+    if COMM.rank == 0:
+        inr2001 = np.concatenate(inr2001)
+        in2r2001 = np.concatenate(in2r2001)
+        timinglist1 = np.concatenate(timinglist1)
+        Comlist1 = np.concatenate(Comlist1)
+
+        inr2002 = np.concatenate(inr2002)
+        in2r2002 = np.concatenate(in2r2002)
+        timinglist2 = np.concatenate(timinglist2)
+        Comlist2 = np.concatenate(Comlist2)
+
+        inr2003 = np.concatenate(inr2003)
+        in2r2003 = np.concatenate(in2r2003)
+        timinglist3 = np.concatenate(timinglist3)
+        Comlist3 = np.concatenate(Comlist3)
+
+        plt.plot(timinglist1, inr2001/Ntot1,c='black', label=r'$\beta$=0',zorder=1)
+        plt.plot(timinglist1, in2r2001/Ntot1,c='black',linestyle='dashed',zorder=1)
+
+        plt.plot(timinglist2, inr2002/Ntot2,c='red',label=r'$\beta$=0.3',zorder=0)
+        plt.plot(timinglist2, in2r2002/Ntot2,c='red',linestyle='dashed',zorder=0)
+
+        plt.plot(timinglist3, inr2003/Ntot3,c='blue',label=r'$\beta$=0.5',zorder=0)
+        plt.plot(timinglist3, in2r2003/Ntot3,c='blue',linestyle='dashed',zorder=0)
+
+        plt.xlabel("Time (Gyr)")
+        plt.ylabel(r"frac contained within $R_{x}$")
+        plt.legend(loc='best')
+        plt.title(f"Mass = {M200:.2e}, Analytical Potential")
+
+        plt.tight_layout()
+        plt.savefig("../../1r200/Plots/ExtraPlots/inr200.png",dpi=600)
+        plt.close()
+
+
+    print(f"Rank {COMM.rank} Finished")
+    COMM.Barrier()
+    MPI.Finalize()
 
 def bonuscalc(df, COM, VEL):
     df['posxCOM'] = df['posx']-COM['posx'].iloc[0] 
@@ -139,152 +298,6 @@ def in2r200func(df,inrhalf,M200=1e12):
     inrhalf.append(len(temp[temp['radiusCOM']<=2*r200]))
     return inrhalf
 
-def main():
-    if COMM.rank == 0:
-        snapshotlst1 = getsnapshotsnew(fp1)
-        snapshotlst2 = getsnapshotsnew(fp2)
-        snapshotlst3 = getsnapshotsnew(fp3)
-        indexdf1,Ntot1 = findmiddleparts(snapshotlst1,fp1)
-        indexdf2,Ntot2 = findmiddleparts(snapshotlst2,fp2)
-        indexdf3,Ntot3 = findmiddleparts(snapshotlst3,fp3)
-        snapshotlst1 = np.array(list(enumerate(snapshotlst1)))
-        snapshotlst2 = np.array(list(enumerate(snapshotlst2)))
-        snapshotlst3 = np.array(list(enumerate(snapshotlst3)))
-        snapsplt1 = np.array_split(snapshotlst1,COMM.size)
-        snapsplt2 = np.array_split(snapshotlst2,COMM.size)
-        snapsplt3 = np.array_split(snapshotlst3,COMM.size)
-    else:
-        snapshotlst1 = None
-        snapsplt1 = None 
-        indexdf1 = None
-        Ntot1 = None
-        snapshotlst2 = None
-        snapsplt2 = None 
-        indexdf2 = None
-        Ntot2 = None
-        snapshotlst3 = None
-        snapsplt3 = None 
-        indexdf3 = None
-        Ntot3 = None
-    
-    indexdf1 = COMM.bcast(indexdf1, root=0)
-    splt1 = COMM.scatter(snapsplt1)
-    Ntot1 = COMM.bcast(Ntot1, root=0)
-
-    indexdf2 = COMM.bcast(indexdf2, root=0)
-    splt2 = COMM.scatter(snapsplt2)
-    Ntot2 = COMM.bcast(Ntot2, root=0)
-
-    indexdf3 = COMM.bcast(indexdf3, root=0)
-    splt3 = COMM.scatter(snapsplt3)
-    Ntot3 = COMM.bcast(Ntot3, root=0)
-
-    inr2001 = []; inr2002 = []; inr2003 = [];
-    in2r2001 = []; in2r2002 = []; in2r2003 = [];
-    timinglist1 = np.empty(shape=(0,0))
-    timinglist2 = np.empty(shape=(0,0))
-    timinglist3 = np.empty(shape=(0,0))
-
-    
-    for i, fname in splt1:
-        M200 = 1e12
-        df, time = datainitializing(fname,fp1)
-        if len(df['posx']) > 10_000_000:
-            df = df[df.index > 10_000_000]
-        timinglist1 = np.append(timinglist1, time)
-        avgposdf, avgveldf = COMfind(df, indexdf1)
-        CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
-        df = bonuscalc(df,CircComdf, CircVeldf)
-        #Comlist = np.concatenate((Comlist, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
-    
-        inr2001 = inr200func(df,inr2001)
-        in2r2001 = in2r200func(df,in2r2001)
-
-        del df
-
-    for i, fname in splt2:
-        M200 = 1e12
-        df, time = datainitializing(fname,fp2)
-        if len(df['posx']) > 10_000_000:
-            df = df[df.index > 10_000_000]
-        timinglist2 = np.append(timinglist2, time)
-        avgposdf, avgveldf = COMfind(df, indexdf1)
-        CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
-        df = bonuscalc(df,CircComdf, CircVeldf)
-        #Comlist = np.concatenate((Comlist, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
-    
-        inr2002 = inr200func(df,inr2002)
-        in2r2002 = in2r200func(df,in2r2002)
-
-        del df
-
-    for i, fname in splt3:
-        M200 = 1e12
-        df, time = datainitializing(fname,fp3)
-        if len(df['posx']) > 10_000_000:
-            df = df[df.index > 10_000_000]
-        timinglist3 = np.append(timinglist3, time)
-        avgposdf, avgveldf = COMfind(df, indexdf1)
-        CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
-        df = bonuscalc(df,CircComdf, CircVeldf)
-        #Comlist = np.concatenate((Comlist, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
-    
-        inr2003 = inr200func(df,inr2003)
-        in2r2003 = in2r200func(df,in2r2003)
-
-        del df
-
-    COMM.Barrier()
-
-    inr2001 = COMM.gather(np.array(inr2001), root=0)
-    in2r2001 = COMM.gather(np.array(in2r2001), root=0)
-    timinglist1 = COMM.gather(timinglist1, root=0)
-
-    inr2002 = COMM.gather(np.array(inr2002), root=0)
-    in2r2002 = COMM.gather(np.array(in2r2002), root=0)
-    timinglist2 = COMM.gather(timinglist2, root=0)
-
-    inr2003 = COMM.gather(np.array(inr2003), root=0)
-    in2r2003 = COMM.gather(np.array(in2r2003), root=0)
-    timinglist3 = COMM.gather(timinglist3, root=0)
-
-    COMM.Barrier()
-
-    if COMM.rank == 0:
-        inr2001 = np.concatenate(inr2001)
-        in2r2001 = np.concatenate(in2r2001)
-        timinglist1 = np.concatenate(timinglist1)
-
-        inr2002 = np.concatenate(inr2002)
-        in2r2002 = np.concatenate(in2r2002)
-        timinglist2 = np.concatenate(timinglist2)
-
-        inr2003 = np.concatenate(inr2003)
-        in2r2003 = np.concatenate(in2r2003)
-        timinglist3 = np.concatenate(timinglist3)
-
-        plt.plot(timinglist1, inr2001/Ntot1,c='black', label=r'$\beta$=0',zorder=1)
-        plt.plot(timinglist1, in2r2001/Ntot1,c='black',linestyle='dashed',zorder=1)
-
-        plt.plot(timinglist2, inr2002/Ntot2,c='red',label=r'$\beta$=0.3',zorder=0)
-        plt.plot(timinglist2, in2r2002/Ntot2,c='red',linestyle='dashed',zorder=0)
-
-        plt.plot(timinglist3, inr2003/Ntot3,c='blue',label=r'$\beta$=0.5',zorder=0)
-        plt.plot(timinglist3, in2r2003/Ntot3,c='blue',linestyle='dashed',zorder=0)
-
-        plt.xlabel("Time (Gyr)")
-        plt.ylabel(r"frac contained within $R_{x}$")
-        plt.legend(loc='best')
-        plt.title(f"Mass = {M200:.2e}, Analytical Potential")
-
-        plt.tight_layout()
-        plt.savefig("../../1r200/Plots/ExtraPlots/inr200.png",dpi=600)
-        plt.close()
-
-
-    print(f"Rank {COMM.rank} Finished")
-    COMM.Barrier()
-    MPI.Finalize()
 
 if __name__ == "__main__":
     main()
