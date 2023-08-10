@@ -8,10 +8,16 @@ import sys
 
 rhocrit = 2.7755e11
 #fp1 = "/Users/jordan.winstanley/Library/CloudStorage/OneDrive-Personal/AAA - Uni/Project - Masters/Simulations/Original functions/1r200/0deg/nodisk/m1e12/Circular/b0/Analytical"
-fp1 = "../../1r200/0deg/nodisk/m1e12/Circular/b0/Analytical"
+fp1 = "../../1r200/0deg/nodisk/m1e11/Circular/b0/Analytical"
 #fp2 = "/Users/jordan.winstanley/Library/CloudStorage/OneDrive-Personal/AAA - Uni/Project - Masters/Simulations/Original functions/1r200/0deg/nodisk/m1e12/Circular/b3/Analytical"
-fp2 = "../../1r200/ExtraSims/m1e12n1e5/Analytical"
+fp2 = "../../1r200/ExtraSims/m1e12cutfor1e11/Analytical"
 
+plotfp = "../../1r200/Plots/ExtraPlots/"
+label1 = "1e11cut"
+label2 = "1e12cut"
+a2f = "diffcut"
+M1 = 1e11
+M2 = 1e11
 
 COMM = MPI.COMM_WORLD
 
@@ -78,8 +84,8 @@ def main():
         #Comlist = np.concatenate((Comlist, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
 
         Comlist1 = np.concatenate((Comlist1, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
-        inr2001 = inr200func(df,inr2001)
-        in2r2001 = in2r200func(df,in2r2001)
+        inr2001 = inr200func(df,inr2001,M1)
+        in2r2001 = in2r200func(df,in2r2001,M1)
 
         del df
         del fulldf
@@ -104,8 +110,8 @@ def main():
         df = bonuscalc(df,CircComdf, CircVeldf)
         Comlist2 = np.concatenate((Comlist2, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
     
-        inr2002 = inr200func(df,inr2002)
-        in2r2002 = in2r200func(df,in2r2002)
+        inr2002 = inr200func(df,inr2002,M2)
+        in2r2002 = in2r200func(df,in2r2002,M2)
 
         del df
         del fulldf
@@ -128,7 +134,7 @@ def main():
 
     if COMM.rank == 0:
 
-        plotfp = "../../1r200/Plots/ExtraPlots/"
+        
 
         inr2001 = np.concatenate(inr2001)
         in2r2001 = np.concatenate(in2r2001)
@@ -146,11 +152,11 @@ def main():
         gs = fig.add_gridspec(2,2)
         (ax1, ax2), (ax3, ax4) = gs.subplots()
         ax1.scatter(Comlist1[:,0],Comlist1[:,1],s=0.2,c="black")
-        ax2.scatter(Comlist1[:,0],Comlist1[:,2],s=0.2,c="black", label="n = 1e6")
+        ax2.scatter(Comlist1[:,0],Comlist1[:,2],s=0.2,c="black", label=label1)
         ax3.scatter(Comlist1[:,1],Comlist1[:,2],s=0.2,c="black")
 
         ax1.scatter(Comlist2[:,0],Comlist2[:,1],s=0.2,c="red")
-        ax2.scatter(Comlist2[:,0],Comlist2[:,2],s=0.2,c="red",label="n = 1e5")
+        ax2.scatter(Comlist2[:,0],Comlist2[:,2],s=0.2,c="red",label=label2)
         ax3.scatter(Comlist2[:,1],Comlist2[:,2],s=0.2,c="red")
 
         ax1.set_xlabel("X")
@@ -163,20 +169,20 @@ def main():
         fig.suptitle(f"Mass: {M:.1e}")
         fig.tight_layout()
         plt.xlabel("x")
-        plt.savefig(plotfp + "2FILECOM.png",dpi=600)
+        plt.savefig(plotfp + "2FILECOM_"+a2f+".png",dpi=600)
         plt.close()
 
 
         Rlist1 = np.sqrt(Comlist1[:,0]**2 + Comlist1[:,1]**2 + Comlist1[:,2]**2)
         Rlist2 = np.sqrt(Comlist2[:,0]**2 + Comlist2[:,1]**2 + Comlist2[:,2]**2)
-        plt.plot(timinglist1,Rlist1,color='black',label="Analytical")
-        plt.plot(timinglist2,Rlist2,color='red',label="Live")
+        plt.plot(timinglist1,Rlist1,color='black',label=label1)
+        plt.plot(timinglist2,Rlist2,color='red',label=label2)
         plt.ylabel("rad")
         plt.xlabel("Time in Gyr")
         plt.legend(loc='best')
         plt.title(f"Mass {M:.1e}")
         plt.tight_layout()
-        plt.savefig(plotfp + "2FILERAD.png",dpi=600)
+        plt.savefig(plotfp + "2FILERAD_"+a2f+".png",dpi=600)
         plt.close()
 
 
@@ -184,10 +190,10 @@ def main():
 
 
 
-        plt.plot(timinglist1, inr2001/Ntot1,c='black', label="N1e6",zorder=1)
+        plt.plot(timinglist1, inr2001/Ntot1,c='black', label=label1,zorder=1)
         plt.plot(timinglist1, in2r2001/Ntot1,c='black',linestyle='dashed',zorder=1)
 
-        plt.plot(timinglist2, inr2002/Ntot2,c='red',label="N1e5",zorder=0)
+        plt.plot(timinglist2, inr2002/Ntot2,c='red',label=label2,zorder=0)
         plt.plot(timinglist2, in2r2002/Ntot2,c='red',linestyle='dashed',zorder=0)
 
         plt.xlabel("Time (Gyr)")
@@ -196,7 +202,7 @@ def main():
         plt.title(f"Mass = {M200:.2e}, Analytical Potential")
 
         plt.tight_layout()
-        plt.savefig("../../1r200/Plots/ExtraPlots/2FILEinr200.png",dpi=600)
+        plt.savefig("../../1r200/Plots/ExtraPlots/2FILEinr200_"+a2f+".png",dpi=600)
         plt.close()
 
 
