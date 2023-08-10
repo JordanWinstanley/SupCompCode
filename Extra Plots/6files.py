@@ -14,38 +14,31 @@ fp2 = "../../1r200/0deg/nodisk/m1e12/Circular/b3/Analytical"
 #fp3 = "/Users/jordan.winstanley/Library/CloudStorage/OneDrive-Personal/AAA - Uni/Project - Masters/Simulations/Original functions/1r200/0deg/nodisk/m1e12/Circular/b5/Analytical"
 fp3 = "../../1r200/0deg/nodisk/m1e12/Circular/b5/Analytical"
 
+fp4 = "../"
+fp5 = "../"
+fp6 = "../"
+
 
 COMM = MPI.COMM_WORLD
 
+
 def main():
     if COMM.rank == 0:
-        snapshotlst1 = getsnapshotsnew(fp1)
-        snapshotlst2 = getsnapshotsnew(fp2)
-        snapshotlst3 = getsnapshotsnew(fp3)
-        indexdf1,Ntot1 = findmiddleparts(snapshotlst1,fp1)
-        indexdf2,Ntot2 = findmiddleparts(snapshotlst2,fp2)
-        indexdf3,Ntot3 = findmiddleparts(snapshotlst3,fp3)
-        snapshotlst1 = np.array(list(enumerate(snapshotlst1)))
-        snapshotlst2 = np.array(list(enumerate(snapshotlst2)))
-        snapshotlst3 = np.array(list(enumerate(snapshotlst3)))
-        snapsplt1 = np.array_split(snapshotlst1,COMM.size)
-        snapsplt2 = np.array_split(snapshotlst2,COMM.size)
-        snapsplt3 = np.array_split(snapshotlst3,COMM.size)
-    else:
-        snapshotlst1 = None
-        snapsplt1 = None 
-        indexdf1 = None
-        Ntot1 = None
-        snapshotlst2 = None
-        snapsplt2 = None 
-        indexdf2 = None
-        Ntot2 = None
-        snapshotlst3 = None
-        snapsplt3 = None 
-        indexdf3 = None
-        Ntot3 = None
-    
+        snapsplt1,indexdf1,Ntot1 = startprep(fp1)
+        snapsplt2,indexdf2,Ntot2 = startprep(fp2)
+        snapsplt3,indexdf3,Ntot3 = startprep(fp3)
+        snapsplt4,indexdf4,Ntot4 = startprep(fp4)
+        snapsplt5,indexdf5,Ntot5 = startprep(fp5)
+        snapsplt6,indexdf6,Ntot6 = startprep(fp6)
 
+    else:
+        snapsplt1 = None; snapsplt2 = None; snapsplt3 = None 
+        indexdf1 = None; indexdf2 = None; indexdf3 = None
+        Ntot1 = None;  Ntot2 = None; Ntot3 = None
+         
+        snapsplt4 = None; snapsplt5 = None; snapsplt6 = None 
+        indexdf4 = None; indexdf5 = None; indexdf6 = None
+        Ntot4 = None;  Ntot5 = None; Ntot6 = None
     
     indexdf1 = COMM.bcast(indexdf1, root=0)
     splt1 = COMM.scatter(snapsplt1)
@@ -59,69 +52,51 @@ def main():
     splt3 = COMM.scatter(snapsplt3)
     Ntot3 = COMM.bcast(Ntot3, root=0)
 
+    indexdf4 = COMM.bcast(indexdf4, root=0)
+    splt4 = COMM.scatter(snapsplt4)
+    Ntot4 = COMM.bcast(Ntot4, root=0)
+
+    indexdf5 = COMM.bcast(indexdf5, root=0)
+    splt5 = COMM.scatter(snapsplt5)
+    Ntot5 = COMM.bcast(Ntot5, root=0)
+
+    indexdf6 = COMM.bcast(indexdf6, root=0)
+    splt6 = COMM.scatter(snapsplt6)
+    Ntot6 = COMM.bcast(Ntot6, root=0)
+
 
     Comlist1 = np.array([]).reshape(0,3)
     Comlist2 = np.array([]).reshape(0,3)
     Comlist3 = np.array([]).reshape(0,3)
-    inr2001 = []; inr2002 = []; inr2003 = [];
-    in2r2001 = []; in2r2002 = []; in2r2003 = [];
+    Comlist4 = np.array([]).reshape(0,3)
+    Comlist5 = np.array([]).reshape(0,3)
+    Comlist6 = np.array([]).reshape(0,3)
+    inr2001 = []; inr2002 = []; inr2003 = []; inr2004 = []; inr2005 = []; inr2006 = [];
+    in2r2001 = []; in2r2002 = []; in2r2003 = [];in2r2004 = []; in2r2005 = []; in2r2006 = [];
     timinglist1 = np.empty(shape=(0,0))
     timinglist2 = np.empty(shape=(0,0))
     timinglist3 = np.empty(shape=(0,0))
-
+    timinglist4 = np.empty(shape=(0,0))
+    timinglist5 = np.empty(shape=(0,0))
+    timinglist6 = np.empty(shape=(0,0))
     
     for i, fname in splt1:
-        M200 = 1e12
-        df, time = datainitializing(fname,fp1)
-        if len(df['posx']) > 10_000_000:
-            df = df[df.index > 10_000_000]
-        timinglist1 = np.append(timinglist1, time)
-        avgposdf, avgveldf = COMfind(df, indexdf1)
-        CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
-        df = bonuscalc(df,CircComdf, CircVeldf)
-        #Comlist = np.concatenate((Comlist, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
-    
-        Comlist1 = np.concatenate((Comlist1, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
-        inr2001 = inr200func(df,inr2001)
-        in2r2001 = in2r200func(df,in2r2001)
-
-        del df
+        timinglist1, inr2001, in2r2001, Comlist1 = bulkcalc(fp1,fname,indexdf1,timinglist1,inr2001,in2r2001,Comlist1)
 
     for i, fname in splt2:
-        M200 = 1e12
-        df, time = datainitializing(fname,fp2)
-        if len(df['posx']) > 10_000_000:
-            df = df[df.index > 10_000_000]
-        timinglist2 = np.append(timinglist2, time)
-        avgposdf, avgveldf = COMfind(df, indexdf2)
-        CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
-        df = bonuscalc(df,CircComdf, CircVeldf)
-        #Comlist = np.concatenate((Comlist, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
-    
-        Comlist2 = np.concatenate((Comlist2, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
-        inr2002 = inr200func(df,inr2002)
-        in2r2002 = in2r200func(df,in2r2002)
-
-        del df
+        timinglist2, inr2002, in2r2002, Comlist2 = bulkcalc(fp2,fname,indexdf2,timinglist2,inr2002,in2r2002,Comlist2)
 
     for i, fname in splt3:
-        M200 = 1e12
-        df, time = datainitializing(fname,fp3)
-        if len(df['posx']) > 10_000_000:
-            df = df[df.index > 10_000_000]
-        timinglist3 = np.append(timinglist3, time)
-        avgposdf, avgveldf = COMfind(df, indexdf3)
-        CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
-        df = bonuscalc(df,CircComdf, CircVeldf)
-        #Comlist = np.concatenate((Comlist, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
+        timinglist3, inr2003, in2r2003, Comlist3 = bulkcalc(fp3,fname,indexdf3,timinglist3,inr2003,in2r2003,Comlist3)
 
-        Comlist3 = np.concatenate((Comlist3, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
-        inr2003 = inr200func(df,inr2003)
-        in2r2003 = in2r200func(df,in2r2003)
+    for i, fname in splt4:
+        timinglist4, inr2004, in2r2004, Comlist4 = bulkcalc(fp4,fname,indexdf4,timinglist4,inr2004,in2r2004,Comlist4)
 
-        del df
+    for i, fname in splt5:
+        timinglist5, inr2005, in2r2005, Comlist5 = bulkcalc(fp5,fname,indexdf5,timinglist5,inr2005,in2r2005,Comlist5)
 
-    COMM.Barrier()
+    for i, fname in splt6:
+        timinglist6, inr2006, in2r2006, Comlist6 = bulkcalc(fp6,fname,indexdf6,timinglist6,inr2006,in2r2006,Comlist6)
 
     inr2001 = COMM.gather(np.array(inr2001), root=0)
     in2r2001 = COMM.gather(np.array(in2r2001), root=0)
@@ -138,7 +113,20 @@ def main():
     timinglist3 = COMM.gather(timinglist3, root=0)
     Comlist3 = COMM.gather(Comlist3, root=0)
 
-    COMM.Barrier()
+    inr2004 = COMM.gather(np.array(inr2004), root=0)
+    in2r2004 = COMM.gather(np.array(in2r2004), root=0)
+    timinglist4 = COMM.gather(timinglist4, root=0)
+    Comlist4 = COMM.gather(Comlist4, root=0)
+
+    inr2005 = COMM.gather(np.array(inr2005), root=0)
+    in2r2005 = COMM.gather(np.array(in2r2005), root=0)
+    timinglist5 = COMM.gather(timinglist5, root=0)
+    Comlist5 = COMM.gather(Comlist5, root=0)
+
+    inr2006 = COMM.gather(np.array(inr2006), root=0)
+    in2r2006 = COMM.gather(np.array(in2r2006), root=0)
+    timinglist6 = COMM.gather(timinglist6, root=0)
+    Comlist6 = COMM.gather(Comlist6, root=0)
 
     if COMM.rank == 0:
 
@@ -159,6 +147,21 @@ def main():
         in2r2003 = np.concatenate(in2r2003)
         timinglist3 = np.concatenate(timinglist3)
         Comlist3 = np.concatenate(Comlist3)
+
+        inr2004 = np.concatenate(inr2004)
+        in2r2004 = np.concatenate(in2r2004)
+        timinglist4 = np.concatenate(timinglist4)
+        Comlist4 = np.concatenate(Comlist4)
+
+        inr2005 = np.concatenate(inr2005)
+        in2r2005 = np.concatenate(in2r2005)
+        timinglist5 = np.concatenate(timinglist5)
+        Comlist5 = np.concatenate(Comlist5)
+
+        inr2006 = np.concatenate(inr2006)
+        in2r2006 = np.concatenate(in2r2006)
+        timinglist6 = np.concatenate(timinglist6)
+        Comlist6 = np.concatenate(Comlist6)
 
         M = 1e12
         fig = plt.figure()
@@ -195,7 +198,6 @@ def main():
         Rlist3 = np.sqrt(Comlist3[:,0]**2 + Comlist3[:,1]**2 + Comlist3[:,2]**2)
         plt.plot(timinglist1,Rlist1,color='black',label="Analytical")
         plt.plot(timinglist2,Rlist2,color='red',label="Live")
-        plt.plot(timinglist3,Rlist3,color='blue',label="Live")
         plt.ylabel("rad")
         plt.xlabel("Time in Gyr")
         plt.legend(loc='best')
@@ -350,6 +352,27 @@ def in2r200func(df,inrhalf,M200=1e12):
     inrhalf.append(len(temp[temp['radiusCOM']<=2*r200]))
     return inrhalf
 
+def startprep(fp):
+    snapshotlst = getsnapshotsnew(fp)
+    indexdf,Ntot = findmiddleparts(snapshotlst,fp)
+    snapshotlst = np.array(list(enumerate(snapshotlst)))
+    snapshotlst - np.array_split(snapshotlst,COMM.size)
+    return snapshotlst, indexdf, Ntot
+
+def bulkcalc(fp, fname, indexdf, timinglist, inr200, in2r200, Comlist, M200=1e12):
+    df, time = datainitializing(fname,fp)
+    if len(df['posx']) > 10_000_000:
+        df = df[df.index > 10_000_000]
+    timinglist1 = np.append(timinglist, time)
+    avgposdf, avgveldf = COMfind(df, indexdf)
+    CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
+    df = bonuscalc(df,CircComdf, CircVeldf)
+    Comlist = np.concatenate((Comlist, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
+    inr200 = inr200func(df,inr200)
+    in2r200 = in2r200func(df,in2r200)
+
+    del df
+    return timinglist, inr200, in2r200, Comlist
 
 if __name__ == "__main__":
     main()

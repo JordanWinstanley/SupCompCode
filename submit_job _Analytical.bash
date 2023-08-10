@@ -13,7 +13,7 @@
 #SBATCH --ntasks-per-node=64                            # Number of processes/threads per node
 #SBATCH --nodes=1                                        # Maximum number of nodes to be allocated
 #SBATCH --mem-per-cpu=4GB                                # Memory (i.e. RAM) per CPU
-#SBATCH --time=4-00:00:00                                # Wall time limit (days-hrs:min:sec)
+#SBATCH --time=0-16:00:00                                # Wall time limit (days-hrs:min:sec)
 #SBATCH --output=Job.log              # Path to the standard output and error files 
                                                          # relative to the working directory
 
@@ -46,4 +46,4 @@ echo "Run Directory  = $(pwd)"
 export OMP_NUM_THREADS=$cpuspertask
 module load gcc/12.2.0 openmpi/4.1.4 fftw/3.3.10 hdf5/1.14.0 gsl/2.7 
 
-srun ../../../../../../NEPM128 ./param.txt
+srun ../../../../../../HernPot ./param.txt

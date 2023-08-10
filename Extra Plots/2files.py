@@ -8,9 +8,9 @@ import sys
 
 rhocrit = 2.7755e11
 #fp1 = "/Users/jordan.winstanley/Library/CloudStorage/OneDrive-Personal/AAA - Uni/Project - Masters/Simulations/Original functions/1r200/0deg/nodisk/m1e12/Circular/b0/Analytical"
-fp1 = "../../0deg/nodisk/m1e11/Circular/b0/Analytical"
+fp1 = "../../1r200/0deg/nodisk/m1e12/Circular/b0/Analytical"
 #fp2 = "/Users/jordan.winstanley/Library/CloudStorage/OneDrive-Personal/AAA - Uni/Project - Masters/Simulations/Original functions/1r200/0deg/nodisk/m1e12/Circular/b3/Analytical"
-fp2 = "../../0deg/nodisk/m1e11/Circular/b0/Live"
+fp2 = "../../1r200/ExtraSims/m1e12n1e5/Analytical"
 
 
 COMM = MPI.COMM_WORLD
@@ -127,6 +127,9 @@ def main():
     COMM.Barrier()
 
     if COMM.rank == 0:
+
+        plotfp = "../../1r200/Plots/ExtraPlots/"
+
         inr2001 = np.concatenate(inr2001)
         in2r2001 = np.concatenate(in2r2001)
         timinglist1 = np.concatenate(timinglist1)
@@ -138,16 +141,16 @@ def main():
         Comlist2 = np.concatenate(Comlist2)
 
 
-        M = 1e11
+        M = 1e12
         fig = plt.figure()
         gs = fig.add_gridspec(2,2)
         (ax1, ax2), (ax3, ax4) = gs.subplots()
         ax1.scatter(Comlist1[:,0],Comlist1[:,1],s=0.2,c="black")
-        ax2.scatter(Comlist1[:,0],Comlist1[:,2],s=0.2,c="black", label="Analytical")
+        ax2.scatter(Comlist1[:,0],Comlist1[:,2],s=0.2,c="black", label="n = 1e6")
         ax3.scatter(Comlist1[:,1],Comlist1[:,2],s=0.2,c="black")
 
         ax1.scatter(Comlist2[:,0],Comlist2[:,1],s=0.2,c="red")
-        ax2.scatter(Comlist2[:,0],Comlist2[:,2],s=0.2,c="red",label="Live")
+        ax2.scatter(Comlist2[:,0],Comlist2[:,2],s=0.2,c="red",label="n = 1e5")
         ax3.scatter(Comlist2[:,1],Comlist2[:,2],s=0.2,c="red")
 
         ax1.set_xlabel("X")
@@ -160,7 +163,7 @@ def main():
         fig.suptitle(f"Mass: {M:.1e}")
         fig.tight_layout()
         plt.xlabel("x")
-        plt.savefig("../../Plots/ExtraPlots/2FILECOM.png",dpi=600)
+        plt.savefig(plotfp + "2FILECOM.png",dpi=600)
         plt.close()
 
 
@@ -173,7 +176,7 @@ def main():
         plt.legend(loc='best')
         plt.title(f"Mass {M:.1e}")
         plt.tight_layout()
-        plt.savefig("../../Plots/ExtraPlots/2FILERAD.png",dpi=600)
+        plt.savefig(plotfp + "2FILERAD.png",dpi=600)
         plt.close()
 
 
@@ -181,10 +184,10 @@ def main():
 
 
 
-        """plt.plot(timinglist1, inr2001/Ntot1,c='black', label=r'$\beta$=0',zorder=1)
+        plt.plot(timinglist1, inr2001/Ntot1,c='black', label="N1e6",zorder=1)
         plt.plot(timinglist1, in2r2001/Ntot1,c='black',linestyle='dashed',zorder=1)
 
-        plt.plot(timinglist2, inr2002/Ntot2,c='red',label=r'$\beta$=0.3',zorder=0)
+        plt.plot(timinglist2, inr2002/Ntot2,c='red',label="N1e5",zorder=0)
         plt.plot(timinglist2, in2r2002/Ntot2,c='red',linestyle='dashed',zorder=0)
 
         plt.xlabel("Time (Gyr)")
@@ -194,7 +197,7 @@ def main():
 
         plt.tight_layout()
         plt.savefig("../../1r200/Plots/ExtraPlots/2FILEinr200.png",dpi=600)
-        plt.close()"""
+        plt.close()
 
 
     print(f"Rank {COMM.rank} Finished")
