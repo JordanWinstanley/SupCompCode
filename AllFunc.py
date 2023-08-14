@@ -158,12 +158,14 @@ def COMfind(df, indexdf):
     return avgposdf, avgveldf
 
 
-def shrinkingcircmethod(df, COM):
+def shrinkingcircmethod(df, COM, plunging=False):
     radlist = 10**np.arange(3,0,-0.1)
     CircComdf = pd.DataFrame(columns = ['posx','posy','posz'])
     CircVeldf = pd.DataFrame(columns = ['velx','vely','velz'])
-    posx = COM['posx'].iloc[0]; posy = COM['posy'].iloc[0]; posz = COM['posz'].iloc[0];
-
+    if not plunging:
+        posx = COM['posx'].iloc[0]; posy = COM['posy'].iloc[0]; posz = COM['posz'].iloc[0];
+    else:
+         posx = posy = posz = 0
 
     for radii in radlist:
         temp = df.copy()
@@ -178,6 +180,52 @@ def shrinkingcircmethod(df, COM):
     CircComdf.loc[len(CircComdf)] = [posx,posy,posz]
     CircVeldf.loc[len(CircVeldf)] = [velx,vely,velz] 
     return CircComdf, CircVeldf
+
+def findcenterhist(df):
+    CircComdf = pd.DataFrame(columns = ['posx','posy','posz'])
+    CircVeldf = pd.DataFrame(columns = ['velx','vely','velz'])
+    temp = df.copy()
+    temp['rad'] = np.sqrt(temp['posx']**2 + temp['posy']**2 + temp['posz']**2)
+    cut = 500 
+    temp = temp[temp['rad'] <= cut]
+    nb = 1000
+    H1, xedges1, yedges1 = np.histogram2d(temp['posx'],temp['posy'],bins=(nb,nb))
+    H2, xedges2, yedges2 = np.histogram2d(temp['posx'],temp['posz'],bins=(nb,nb))
+    H3, xedges3, yedges3 = np.histogram2d(temp['posy'],temp['posz'],bins=(nb,nb))
+
+    for x, y in np.argwhere(H1 == H1.max()):
+        # center is between x and x+1
+        xpos1 = np.average(xedges1[x:x + 2])
+        ypos1 = np.average(yedges1[y:y + 2])
+
+    for x, z in np.argwhere(H2 == H2.max()):
+        # center is between x and x+1
+        xpos2 = np.average(xedges2[x:x + 2])
+        zpos1 = np.average(yedges2[z:z + 2])
+
+    for y, z in np.argwhere(H3 == H3.max()):
+        # center is between x and x+1
+        ypos2 = np.average(xedges3[y:y + 2])
+        zpos2 = np.average(yedges3[z:z + 2])
+
+    posx = (xpos1 + xpos2)/2
+    posy = (ypos1 + ypos2)/2
+    posz = (zpos1 + zpos2)/2
+
+    CircComdf.loc[len(CircComdf)] = [posx,posy,posz]
+    del temp    
+    temp = df.copy()
+    temp['posx'] -= posx
+    temp['posy'] -= posy
+    temp['posz'] -= posz
+    temp['rad'] = np.sqrt(temp['posx']**2 + temp['posy']**2 + temp['posz']**2)
+    temp = temp[temp['rad']<1]
+    velx = temp['velx'].mean(); vely = temp['vely'].mean(); velz = temp['velz'].mean()
+    CircVeldf.loc[len(CircVeldf)] = [velx,vely,velz]
+    del temp
+    return CircComdf, CircVeldf
+
+
 
 def recenterdf(df):
     df['posx'] -= df[df.index <= 10_000_000]['posx'].mean()
@@ -348,7 +396,12 @@ def position(df,filename,fp,i,k,CircComdf):
     plt.savefig(fp+"plots/pos/"+"position_"+filename,dpi=600)
     plt.close()
 
+
+    temp = df.copy() 
     nb = 1000
+
+    df = df[df['radius']<=500]
+
     plt.hist2d(df['posx'],df['posy'], bins=(nb,nb),cmap=plt.cm.jet)
     plt.scatter(CircComdf['posx'],CircComdf['posy'],s=1,zorder=1,c='red')
     plt.xlabel('x')
@@ -366,7 +419,7 @@ def position(df,filename,fp,i,k,CircComdf):
     plt.close()
 
     npoint = 1600
-    temp = df.copy()    
+       
     temp = temp.sort_values(by=['radiusCOM']).head(npoint)
 
     plt.quiver(temp['posx'],temp['posy'],temp['velxCOM'],temp['velyCOM'],color='green')

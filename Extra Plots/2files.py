@@ -80,6 +80,7 @@ def main():
         timinglist1 = np.append(timinglist1, time)
         avgposdf, avgveldf = COMfind(df, indexdf1)
         CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
+        CircComdf, CircVeldf = findcenterhist(df)
         df = bonuscalc(df,CircComdf, CircVeldf)
         #Comlist = np.concatenate((Comlist, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
 
@@ -107,6 +108,7 @@ def main():
         timinglist2 = np.append(timinglist2, time)
         avgposdf, avgveldf = COMfind(df, indexdf2)
         CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
+        CircComdf, CircVeldf = findcenterhist(df)
         df = bonuscalc(df,CircComdf, CircVeldf)
         Comlist2 = np.concatenate((Comlist2, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
     
@@ -334,6 +336,51 @@ def recenterdf(df):
     df['velz'] -= df[df.index <= 10_000_000]['velz'].mean()
     return df
 
+
+def findcenterhist(df):
+    CircComdf = pd.DataFrame(columns = ['posx','posy','posz'])
+    CircVeldf = pd.DataFrame(columns = ['velx','vely','velz'])
+    temp = df.copy()
+    temp['rad'] = np.sqrt(temp['posx']**2 + temp['posy']**2 + temp['posz']**2)
+    cut = 500 
+    temp = temp[temp['rad'] <= cut]
+    nb = 1000
+    H1, xedges1, yedges1 = np.histogram2d(temp['posx'],temp['posy'],bins=(nb,nb))
+    H2, xedges2, yedges2 = np.histogram2d(temp['posx'],temp['posz'],bins=(nb,nb))
+    H3, xedges3, yedges3 = np.histogram2d(temp['posy'],temp['posz'],bins=(nb,nb))
+
+    for x, y in np.argwhere(H1 == H1.max()):
+        # center is between x and x+1
+        xpos1 = np.average(xedges1[x:x + 2])
+        ypos1 = np.average(yedges1[y:y + 2])
+
+    for x, z in np.argwhere(H2 == H2.max()):
+        # center is between x and x+1
+        xpos2 = np.average(xedges2[x:x + 2])
+        zpos1 = np.average(yedges2[z:z + 2])
+
+    for y, z in np.argwhere(H3 == H3.max()):
+        # center is between x and x+1
+        ypos2 = np.average(xedges3[y:y + 2])
+        zpos2 = np.average(yedges3[z:z + 2])
+
+    posx = (xpos1 + xpos2)/2
+    posy = (ypos1 + ypos2)/2
+    posz = (zpos1 + zpos2)/2
+
+
+    CircComdf.loc[len(CircComdf)] = [posx,posy,posz]
+    del temp    
+    temp = df.copy()
+    temp['posx'] -= posx
+    temp['posy'] -= posy
+    temp['posz'] -= posz
+    temp['rad'] = np.sqrt(temp['posx']**2 + temp['posy']**2 + temp['posz']**2)
+    temp = temp[temp['rad']<1]
+    velx = temp['velx'].mean(); vely = temp['vely'].mean(); velz = temp['velz'].mean()
+    CircVeldf.loc[len(CircVeldf)] = [velx,vely,velz]
+    del temp
+    return CircComdf, CircVeldf
 
 if __name__ == "__main__":
     main()

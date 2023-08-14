@@ -8,20 +8,24 @@ import sys
 
 
 #fp1 = "/Users/jordan.winstanley/Library/CloudStorage/OneDrive-Personal/AAA - Uni/Project - Masters/Simulations/Original functions/1r200/0deg/nodisk/m1e12/Circular/b0/Analytical"
-fp1 = "../../1r200/0deg/nodisk/m1e12/Circular/b0/Analytical"
+fp1 = "../../1r200/ExtraSims/nocut/1e12/Circular/b0/Analytical"
 #fp2 = "/Users/jordan.winstanley/Library/CloudStorage/OneDrive-Personal/AAA - Uni/Project - Masters/Simulations/Original functions/1r200/0deg/nodisk/m1e12/Circular/b3/Analytical"
-fp2 = "../../1r200/0deg/nodisk/m1e12/Circular/b3/Analytical"
+fp2 = "../../1r200/ExtraSims/nocut/1e12/Intermediate/b0/Analytical"
 #fp3 = "/Users/jordan.winstanley/Library/CloudStorage/OneDrive-Personal/AAA - Uni/Project - Masters/Simulations/Original functions/1r200/0deg/nodisk/m1e12/Circular/b5/Analytical"
-fp3 = "../../1r200/0deg/nodisk/m1e12/Circular/b5/Analytical"
+fp3 = "../../1r200/ExtraSims/nocut/1e12/Plunging/b0/Analytical"
 
 plotfp = "../../1r200/Plots/ExtraPlots/"
-label1 = r'$\beta$=0'
-label2 = r'$\beta$=0.3'
-label3 = r'$\beta$=0.5'
-a2f = "diffbeta"
+label1 = "Circular"
+label2 = "Intermediate"
+label3 = "Plunging"
+
+a2f = "1e12difforbit"
+
 M1 = 1e12
 M2 = 1e12
 M3 = 1e12
+
+title = "Mass: 1e12, Different Orbits"
 
 
 COMM = MPI.COMM_WORLD
@@ -85,8 +89,9 @@ def main():
         if len(df['posx']) > 10_000_000:
             df = df[df.index > 10_000_000]
         timinglist1 = np.append(timinglist1, time)
-        avgposdf, avgveldf = COMfind(df, indexdf1)
-        CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
+        #avgposdf, avgveldf = COMfind(df, indexdf1)
+        #CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
+        CircComdf, CircVeldf = findcenterhist(df)
         df = bonuscalc(df,CircComdf, CircVeldf)
         #Comlist = np.concatenate((Comlist, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
     
@@ -104,6 +109,7 @@ def main():
         timinglist2 = np.append(timinglist2, time)
         avgposdf, avgveldf = COMfind(df, indexdf2)
         CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
+        CircComdf, CircVeldf = findcenterhist(df)
         df = bonuscalc(df,CircComdf, CircVeldf)
         #Comlist = np.concatenate((Comlist, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
     
@@ -121,6 +127,7 @@ def main():
         timinglist3 = np.append(timinglist3, time)
         avgposdf, avgveldf = COMfind(df, indexdf3)
         CircComdf, CircVeldf = shrinkingcircmethod(df, avgposdf)
+        CircComdf, CircVeldf = findcenterhist(df)
         df = bonuscalc(df,CircComdf, CircVeldf)
         #Comlist = np.concatenate((Comlist, np.array(CircComdf.iloc[0]).reshape(1,3)),axis=0)
 
@@ -150,10 +157,6 @@ def main():
     COMM.Barrier()
 
     if COMM.rank == 0:
-
-
-        
-
         inr2001 = np.concatenate(inr2001)
         in2r2001 = np.concatenate(in2r2001)
         timinglist1 = np.concatenate(timinglist1)
@@ -169,6 +172,10 @@ def main():
         timinglist3 = np.concatenate(timinglist3)
         Comlist3 = np.concatenate(Comlist3)
 
+        Rlist1 = np.sqrt(Comlist1[:,0]**2 + Comlist1[:,1]**2 + Comlist1[:,2]**2)
+        Rlist2 = np.sqrt(Comlist2[:,0]**2 + Comlist2[:,1]**2 + Comlist2[:,2]**2)
+        Rlist3 = np.sqrt(Comlist3[:,0]**2 + Comlist3[:,1]**2 + Comlist3[:,2]**2)
+
         M = 1e12
         fig = plt.figure()
         gs = fig.add_gridspec(2,2)
@@ -176,14 +183,17 @@ def main():
         ax1.scatter(Comlist1[:,0],Comlist1[:,1],s=0.2,c="black")
         ax2.scatter(Comlist1[:,0],Comlist1[:,2],s=0.2,c="black", label=label1)
         ax3.scatter(Comlist1[:,1],Comlist1[:,2],s=0.2,c="black")
+        ax4.plot(timinglist1, Rlist1, c="black")
 
         ax1.scatter(Comlist2[:,0],Comlist2[:,1],s=0.2,c="red")
         ax2.scatter(Comlist2[:,0],Comlist2[:,2],s=0.2,c="red",label=label2)
         ax3.scatter(Comlist2[:,1],Comlist2[:,2],s=0.2,c="red")
+        ax4.plot(timinglist2, Rlist2, c="red")
 
         ax1.scatter(Comlist3[:,0],Comlist3[:,1],s=0.2,c="blue")
         ax2.scatter(Comlist3[:,0],Comlist3[:,2],s=0.2,c="blue",label=label3)
         ax3.scatter(Comlist3[:,1],Comlist3[:,2],s=0.2,c="blue")
+        ax4.plot(timinglist3, Rlist3, c="blue")
 
         ax1.set_xlabel("X")
         ax1.set_ylabel("Y")
@@ -191,23 +201,23 @@ def main():
         ax2.set_ylabel("Z")
         ax3.set_xlabel("Y")
         ax3.set_ylabel("Z")
-        plt.legend(loc='best')
-        fig.suptitle(f"Mass: {M:.1e}")
+        ax4.set_xlabel("T (Gyr)")
+        ax4.set_ylabel("Radius")
+        #plt.legend(loc='best')
+        fig.suptitle(title)
         fig.tight_layout()
-        plt.xlabel("x")
         plt.savefig(plotfp + "3FILECOM_"+a2f+".png",dpi=600)
         plt.close()
 
 
-        Rlist1 = np.sqrt(Comlist1[:,0]**2 + Comlist1[:,1]**2 + Comlist1[:,2]**2)
-        Rlist2 = np.sqrt(Comlist2[:,0]**2 + Comlist2[:,1]**2 + Comlist2[:,2]**2)
-        Rlist3 = np.sqrt(Comlist3[:,0]**2 + Comlist3[:,1]**2 + Comlist3[:,2]**2)
+        
         plt.plot(timinglist1,Rlist1,color='black',label=label1)
         plt.plot(timinglist2,Rlist2,color='red',label=label2)
         plt.plot(timinglist3,Rlist3,color='blue',label=label3)
         plt.ylabel("rad")
         plt.xlabel("Time in Gyr")
         plt.legend(loc='best')
+        plt.title(title)
         #plt.title(f"Mass {M:.1e}")
         plt.tight_layout()
         plt.savefig(plotfp + "3FILERAD_"+a2f+".png",dpi=600)
@@ -227,7 +237,7 @@ def main():
         plt.xlabel("Time (Gyr)")
         plt.ylabel(r"frac contained within $R_{x}$")
         plt.legend(loc='best')
-        plt.title(f"Mass = {M200:.2e}, Analytical Potential")
+        plt.title(title)
 
         plt.tight_layout()
         plt.savefig(plotfp + "3FILEinr200_"+a2f+".png",dpi=600)
@@ -358,6 +368,52 @@ def in2r200func(df,inrhalf,M200=1e12):
     r200 = (3/4/np.pi/200/rhocrit*M200)**(1/3)*1000
     inrhalf.append(len(temp[temp['radiusCOM']<=2*r200]))
     return inrhalf
+
+def findcenterhist(df):
+    CircComdf = pd.DataFrame(columns = ['posx','posy','posz'])
+    CircVeldf = pd.DataFrame(columns = ['velx','vely','velz'])
+    temp = df.copy()
+    temp['rad'] = np.sqrt(temp['posx']**2 + temp['posy']**2 + temp['posz']**2)
+    cut = 500 
+    temp = temp[temp['rad'] <= cut]
+    nb = 1000
+    H1, xedges1, yedges1 = np.histogram2d(temp['posx'],temp['posy'],bins=(nb,nb))
+    H2, xedges2, yedges2 = np.histogram2d(temp['posx'],temp['posz'],bins=(nb,nb))
+    H3, xedges3, yedges3 = np.histogram2d(temp['posy'],temp['posz'],bins=(nb,nb))
+
+    for x, y in np.argwhere(H1 == H1.max()):
+        # center is between x and x+1
+        xpos1 = np.average(xedges1[x:x + 2])
+        ypos1 = np.average(yedges1[y:y + 2])
+
+    for x, z in np.argwhere(H2 == H2.max()):
+        # center is between x and x+1
+        xpos2 = np.average(xedges2[x:x + 2])
+        zpos1 = np.average(yedges2[z:z + 2])
+
+    for y, z in np.argwhere(H3 == H3.max()):
+        # center is between x and x+1
+        ypos2 = np.average(xedges3[y:y + 2])
+        zpos2 = np.average(yedges3[z:z + 2])
+
+    posx = (xpos1 + xpos2)/2
+    posy = (ypos1 + ypos2)/2
+    posz = (zpos1 + zpos2)/2
+
+
+    CircComdf.loc[len(CircComdf)] = [posx,posy,posz]
+    del temp    
+    temp = df.copy()
+    temp['posx'] -= posx
+    temp['posy'] -= posy
+    temp['posz'] -= posz
+    temp['rad'] = np.sqrt(temp['posx']**2 + temp['posy']**2 + temp['posz']**2)
+    temp = temp[temp['rad']<1]
+    velx = temp['velx'].mean(); vely = temp['vely'].mean(); velz = temp['velz'].mean()
+    CircVeldf.loc[len(CircVeldf)] = [velx,vely,velz]
+    del temp
+    return CircComdf, CircVeldf
+
 
 
 if __name__ == "__main__":

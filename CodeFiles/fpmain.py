@@ -53,7 +53,7 @@ def main():
         df, time = af.datainitializing(fname)
         if len(df['posx']) > 10_000_000:
             df = af.recenterdf(df)
-            fulldf = df.copy()
+            fulldf = df[df.index <= 10_000_000]
             df = df[df.index > 10_000_000]
             Live = True
         else:
