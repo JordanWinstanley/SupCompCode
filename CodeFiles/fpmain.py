@@ -16,18 +16,26 @@ while test == False:
         x = os.listdir(backstr)
 x = backstr + "SupCompCode"
 sys.path.insert(0,x)
-import parameters as par
+COMM = MPI.COMM_WORLD
+
+global M200; global beta
+fpexists = True
+simloc = "/1r200/ExtraSims/nocut/1e12/Plunging/b0/Analytical"
+M200 = 1e12
+beta = 0
+
 import AllFunc as af
-
-
 def main():
-    global COMM
-    COMM = MPI.COMM_WORLD
+    fpm = "../.." + simloc
     if COMM.rank == 0:
-        snapshotlst = af.getsnapshots()
-        plotfilepath,pltfiles = af.findplotdirec()
-        plotfp = af.prepareplotfile(plotfilepath, pltfiles)
-        indexdf,Ntot = af.findmiddleparts(snapshotlst)
+        snapshotlst = af.getsnapshots(fpm,fpexists)
+        plotfilepath,pltfiles = af.findplotdirec(fpm,fpexists)
+        if fpexists == True:
+            pltfiles = simloc
+        print(plotfilepath)
+        print(pltfiles)
+        plotfp = af.prepareplotfile(plotfilepath, pltfiles,fpexists)
+        indexdf,Ntot = af.findmiddleparts(snapshotlst,fpm,fpexists)
         k = len(snapshotlst)
         snapshotlst = np.array(list(enumerate(snapshotlst)))
         snapsplt = np.array_split(snapshotlst,COMM.size)
@@ -50,7 +58,7 @@ def main():
     inr200 = []; timinglist = np.empty(shape=(0,0))
     in2r200 = [];
     for i, fname in splt:
-        df, time = af.datainitializing(fname)
+        df, time = af.datainitializing(fname,fpm,fpexists)
         if len(df['posx']) > 10_000_000:
             df = af.recenterdf(df)
             fulldf = df[df.index <= 10_000_000]

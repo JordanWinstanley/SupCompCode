@@ -16,7 +16,6 @@ while test == False:
         x = os.listdir(backstr)
 x = backstr + "SupCompCode"
 sys.path.insert(0,x)
-import parameters as par
 import AllFunc as af
 
 

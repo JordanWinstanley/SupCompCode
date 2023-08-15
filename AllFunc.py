@@ -5,33 +5,64 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import sys
+
 sys.path.insert(0,os.getcwd())
-import parameters as par
+fpimport = False
+try:
+    import fpmain as test
+except:
+    pass
+else:
+    pass
+    fpimport = True
+    M200 = test.M200
+    beta = test.beta
+
+if fpimport == False:
+    try:
+        import parameters as par
+    except:
+        pass
+    else:
+        pass
+        M200 = par.M200
+        beta = par.beta
+
 massunit = 1e10
 kpctom = 3.086e+19 
 smtokg = 1.9889e+30
 G = 6.67430 * (10 ** (-11)); 
+c = 10
 rhocrit = 2.7755e11
-r200 = (3/4/np.pi/200/rhocrit*par.M200)**(1/3)*1000
-rs = r200 / par.c * np.sqrt(2*(np.log(1+par.c)-par.c/(1+par.c)))
-halodens = par.M200 / 2 / np.pi / rs**3
-    
+r200 = (3/4/np.pi/200/rhocrit*M200)**(1/3)*1000
+rs = r200 / c * np.sqrt(2*(np.log(1+c)-c/(1+c)))
+halodens = M200 / 2 / np.pi / rs**3
 
-def prepareplotfile(plotfilepath, pltfiles):
-    x = pltfiles.split("/")
-    x.pop()
+def prepareplotfile(plotfilepath, pltfiles,fpexists=False):
+    if fpexists == False:
+        x = pltfiles.split("/")
+        x.pop()
+    else:
+        x = pltfiles.split("/")
+        x.pop(0)
     sparestr = ""
+    print(f"x: {x}")
+    print(f"pfp: {plotfilepath}")
     for item in x:
         if os.path.exists(plotfilepath + sparestr + item) == False:
             os.mkdir(plotfilepath + sparestr + item)
         sparestr = sparestr + item + "/"
     plotfilepath2 = plotfilepath + sparestr
+    print(f"pfp: {plotfilepath2}")
     directorycheck(plotfilepath2)
     return plotfilepath2
 
 
-def getsnapshots():
-    files = sorted(os.listdir(os.getcwd() + "/output/"))
+def getsnapshots(fp=None, fpexists=False):
+    if fpexists == False:
+        files = sorted(os.listdir(os.getcwd() + "/output/"))
+    else:
+        files = sorted(os.listdir(fp + "/output/"))
     snapshotlst = []
     for item in files:
         if "snapshot" in item:
@@ -39,21 +70,24 @@ def getsnapshots():
     return sorted(snapshotlst)
 
 
-def findplotdirec():
-    test = False
-    backstr = ""
-    x = os.listdir(os.getcwd())
-    pltfiles = ""
-    while test == False:
-        if "Plots" in x:
-            test = True
-        else:
-            backstr = backstr + "../"
-            x = os.listdir(backstr)
-            for item in x:
-                if item in os.getcwd():
-                    pltfiles = item + "/" + pltfiles
-    return backstr + "Plots/", pltfiles
+def findplotdirec(fp = None, fpexists=False):
+    if fpexists == False:
+        test = False
+        backstr = ""
+        x = os.listdir(os.getcwd())
+        pltfiles = ""
+        while test == False:
+            if "Plots" in x:
+                test = True
+            else:
+                backstr = backstr + "../"
+                x = os.listdir(backstr)
+                for item in x:
+                    if item in os.getcwd():
+                        pltfiles = item + "/" + pltfiles
+        return backstr + "Plots/", pltfiles
+    else:
+        return "../../Plots/", None
 
 
 def directorycheck(fp): 
@@ -98,42 +132,77 @@ def directorycheck(fp):
 #Main Bulk of Functions for central location Calculation
 
 
-def datainitializing(filename): 
-    with h5py.File("output/"+ filename, 'r') as f:
-        NumPart = f['Header'].attrs['NumPart_Total'][()]
-        pos = f['PartType1/Coordinates'][()]
-        vel = f['PartType1/Velocities'][()]
-        pids = f['PartType1/ParticleIDs'][()]
-        masses = f['PartType1/Masses'][()]
-        data = {
-            "posx": pos[:, 0],
-            "posy": pos[:, 1],
-            "posz": pos[:, 2],
-            "velx": vel[:, 0],
-            "vely": vel[:, 1],
-            "velz": vel[:, 2], 
-            "mpp": masses
-        }
-        df = pd.DataFrame(data, index = pids)
-        time = f['Header'].attrs['Time']
+def datainitializing(filename,fp=None,fpexists=False): 
+    if fpexists == False:
+        with h5py.File("output/"+ filename, 'r') as f:
+            NumPart = f['Header'].attrs['NumPart_Total'][()]
+            pos = f['PartType1/Coordinates'][()]
+            vel = f['PartType1/Velocities'][()]
+            pids = f['PartType1/ParticleIDs'][()]
+            masses = f['PartType1/Masses'][()]
+            data = {
+                "posx": pos[:, 0],
+                "posy": pos[:, 1],
+                "posz": pos[:, 2],
+                "velx": vel[:, 0],
+                "vely": vel[:, 1],
+                "velz": vel[:, 2], 
+                "mpp": masses
+            }
+            df = pd.DataFrame(data, index = pids)
+            time = f['Header'].attrs['Time']
+    else:
+         with h5py.File(fp+"/output/"+ filename, 'r') as f:
+            NumPart = f['Header'].attrs['NumPart_Total'][()]
+            pos = f['PartType1/Coordinates'][()]
+            vel = f['PartType1/Velocities'][()]
+            pids = f['PartType1/ParticleIDs'][()]
+            masses = f['PartType1/Masses'][()]
+            data = {
+                "posx": pos[:, 0],
+                "posy": pos[:, 1],
+                "posz": pos[:, 2],
+                "velx": vel[:, 0],
+                "vely": vel[:, 1],
+                "velz": vel[:, 2], 
+                "mpp": masses
+            }
+            df = pd.DataFrame(data, index = pids)
+            time = f['Header'].attrs['Time']
     return df, time
 
 
-def findmiddleparts(snapshotlst,i=10):
-    with h5py.File("output/"+ snapshotlst[0], 'r') as f:
-        NumPart = f['Header'].attrs['NumPart_Total'][()]
-        pos = f['PartType1/Coordinates'][()]
-        vel = f['PartType1/Velocities'][()]
-        pids = f['PartType1/ParticleIDs'][()]
-        data = {
-            "posx": pos[:, 0],
-            "posy": pos[:, 1],
-            "posz": pos[:, 2],
-            "velx": vel[:, 0],
-            "vely": vel[:, 1],
-            "velz": vel[:, 2]
-        }
-        df = pd.DataFrame(data, index=pids)
+def findmiddleparts(snapshotlst,fp = None, fpexists = False, i=10):
+    if fpexists == False:
+        with h5py.File("output/"+ snapshotlst[0], 'r') as f:
+            NumPart = f['Header'].attrs['NumPart_Total'][()]
+            pos = f['PartType1/Coordinates'][()]
+            vel = f['PartType1/Velocities'][()]
+            pids = f['PartType1/ParticleIDs'][()]
+            data = {
+                "posx": pos[:, 0],
+                "posy": pos[:, 1],
+                "posz": pos[:, 2],
+                "velx": vel[:, 0],
+                "vely": vel[:, 1],
+                "velz": vel[:, 2]
+            }
+            df = pd.DataFrame(data, index=pids)
+    else:
+         with h5py.File(fp + "/output/"+ snapshotlst[0], 'r') as f:
+            NumPart = f['Header'].attrs['NumPart_Total'][()]
+            pos = f['PartType1/Coordinates'][()]
+            vel = f['PartType1/Velocities'][()]
+            pids = f['PartType1/ParticleIDs'][()]
+            data = {
+                "posx": pos[:, 0],
+                "posy": pos[:, 1],
+                "posz": pos[:, 2],
+                "velx": vel[:, 0],
+                "vely": vel[:, 1],
+                "velz": vel[:, 2]
+            }
+            df = pd.DataFrame(data, index=pids)
     if len(df['posx']) > 10_000_000:
          df = df[df.index > 10_000_000]
     Ntot = len(df['posx'])
@@ -348,13 +417,13 @@ def calcs(df, r, COM, VEL):
 
 def inr200func(df,inrhalf):
     temp = df.copy(); tot = len(df['posx'])
-    r200 = (3/4/np.pi/200/rhocrit*par.M200)**(1/3)*1000
+    r200 = (3/4/np.pi/200/rhocrit*M200)**(1/3)*1000
     inrhalf.append(len(temp[temp['radiusCOM']<=r200]))
     return inrhalf
 
 def in2r200func(df,inrhalf):
     temp = df.copy(); tot = len(df['posx'])
-    r200 = (3/4/np.pi/200/rhocrit*par.M200)**(1/3)*1000
+    r200 = (3/4/np.pi/200/rhocrit*M200)**(1/3)*1000
     inrhalf.append(len(temp[temp['radiusCOM']<=2*r200]))
     return inrhalf
 
@@ -398,7 +467,7 @@ def position(df,filename,fp,i,k,CircComdf):
 
 
     temp = df.copy() 
-    nb = 1000
+    nb = 128
 
     df = df[df['radius']<=500]
 
@@ -410,7 +479,7 @@ def position(df,filename,fp,i,k,CircComdf):
     plt.savefig(fp+"plots/pos/"+"positionhist_"+filename,dpi=600)
     plt.close()
 
-    plt.hexbin(df['posx'],df['posy'], gridsize=(nb,nb))
+    plt.hexbin(df['posx'],df['posy'], gridsize=128,bins='log')
     plt.scatter(CircComdf['posx'],CircComdf['posy'],s=1,zorder=1,c='red')
     plt.xlabel('x')
     plt.ylabel('y')
@@ -589,7 +658,7 @@ def inr200plot(r200,fp,timinglist,Ntot):
     plt.scatter(timinglist, r200/Ntot, s=1, color='black',zorder=1)
     plt.ylabel("Frac in r200")
     plt.xlabel("Gyr")
-    plt.title(f"Mass {par.M200}SM, beta = {par.beta}")
+    plt.title(f"Mass {M200}SM, beta = {beta}")
     plt.savefig(fp+"plots/inr200/inr200.png",dpi=600)
     plt.close()
 
@@ -601,7 +670,7 @@ def in2r200plot(r200,r2002,fp,timinglist,Ntot):
     plt.ylabel("Frac in R")
     plt.xlabel("Gyr")
     plt.legend(loc='best')
-    plt.title(f"Mass {par.M200:.2e} , beta = {par.beta}")
+    plt.title(f"Mass {M200:.2e} , beta = {beta}")
     plt.tight_layout()
     plt.savefig(fp+"plots/inr200/in2r200.png",dpi=600)
     plt.close()
@@ -615,7 +684,7 @@ def masschange(r200,r2002,fp,timinglist,Ntot):
     plt.ylabel("Frac in R")
     plt.xlabel("Gyr")
     plt.legend(loc='best')
-    plt.title(f"Mass {par.M200:.2e} , beta = {par.beta}")
+    plt.title(f"Mass {M200:.2e} , beta = {beta}")
     plt.tight_layout()
     plt.savefig(fp+"plots/inr200/in2r200.png",dpi=600)
     plt.close()
